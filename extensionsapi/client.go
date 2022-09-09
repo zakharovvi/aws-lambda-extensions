@@ -45,7 +45,7 @@ type RegisterResponse struct {
 	FunctionName    string            `json:"functionName"`
 	FunctionVersion string            `json:"functionVersion"`
 	Handler         string            `json:"handler"`
-	Configuration   map[string]string `json:"configuration"` // todo what is inside?
+	Configuration   map[string]string `json:"configuration"`
 }
 
 // NextEventResponse is the response for /event/next
@@ -75,41 +75,93 @@ type StatusResponse struct {
 	Status string `json:"status"`
 }
 
-type Client struct {
-	baseURL     string
-	httpClient  *http.Client
-	extensionID string
+type options struct {
+	extensionName       string
+	awsLambdaRuntimeAPI string
+	eventTypes          []EventType
+	httpClient          *http.Client
+}
+type Option interface {
+	apply(*options)
 }
 
-func New(awsLambdaRuntimeAPI string) *Client {
-	if awsLambdaRuntimeAPI == "" {
-		awsLambdaRuntimeAPI = os.Getenv("AWS_LAMBDA_RUNTIME_API")
-	}
-	if awsLambdaRuntimeAPI == "" {
-		panic("could not find extension API endpoint from environment variable AWS_LAMBDA_RUNTIME_API")
-	}
+type extensionNameOption string
 
-	return &Client{
-		baseURL:    fmt.Sprintf("http://%s/2020-01-01/extension", awsLambdaRuntimeAPI),
-		httpClient: http.DefaultClient,
-	}
+func (o extensionNameOption) apply(opts *options) {
+	opts.extensionName = string(o)
+}
+func WithExtensionName(name string) Option {
+	return extensionNameOption(name)
+}
+
+type awsLambdaRuntimeAPIOption string
+
+func (o awsLambdaRuntimeAPIOption) apply(opts *options) {
+	opts.extensionName = string(o)
+}
+func WithAWSLambdaRuntimeAPI(api string) Option {
+	return awsLambdaRuntimeAPIOption(api)
+}
+
+type eventTypesOption []EventType
+
+func (o eventTypesOption) apply(opts *options) {
+	opts.eventTypes = o
+}
+func WithEventTypes(types []EventType) Option {
+	return eventTypesOption(types)
+}
+
+type httpClientOption struct {
+	httpClient *http.Client
+}
+
+func (o httpClientOption) apply(opts *options) {
+	opts.httpClient = o.httpClient
+}
+func WithHTTPClient(httpClient *http.Client) Option {
+	return httpClientOption{httpClient}
+}
+
+type Client struct {
+	baseURL      string
+	httpClient   *http.Client
+	extensionID  string
+	RegisterResp *RegisterResponse
 }
 
 // Register registers the extension with the Lambda Extensions API. This happens
 // during Extension Init. Each call must include the list of events in the body
 // and the extension name in the headers.
-func (c *Client) Register(ctx context.Context, extensionName string, eventTypes []EventType) (*RegisterResponse, error) {
-	if len(eventTypes) == 0 {
-		eventTypes = append(eventTypes, Invoke, Shutdown)
+func Register(ctx context.Context, opts ...Option) (*Client, error) {
+	extensionName, _ := os.Executable()
+	options := options{
+		extensionName:       extensionName,
+		awsLambdaRuntimeAPI: os.Getenv("AWS_LAMBDA_RUNTIME_API"),
+		eventTypes:          []EventType{Invoke, Shutdown},
+		httpClient:          http.DefaultClient,
 	}
-	if extensionName == "" {
-		var err error
-		extensionName, err = os.Executable()
-		if err != nil {
-			return nil, fmt.Errorf("could not get full file name of the extension: %w", err)
-		}
+	for _, o := range opts {
+		o.apply(&options)
+	}
+	if options.awsLambdaRuntimeAPI == "" {
+		return nil, errors.New("could not find environment variable AWS_LAMBDA_RUNTIME_API")
 	}
 
+	client := &Client{
+		baseURL:    fmt.Sprintf("http://%s/2020-01-01/extension", options.awsLambdaRuntimeAPI),
+		httpClient: options.httpClient,
+	}
+	var err error
+	client.RegisterResp, err = client.register(ctx, options.extensionName, options.eventTypes)
+	if err != nil {
+		return nil, fmt.Errorf("could not register extension: %w", err)
+	}
+
+	return client, nil
+}
+
+func (c *Client) register(ctx context.Context, extensionName string, eventTypes []EventType) (*RegisterResponse, error) {
 	registerReq := RegisterRequest{EventTypes: eventTypes}
 	body, err := json.Marshal(&registerReq)
 	if err != nil {
@@ -128,7 +180,7 @@ func (c *Client) Register(ctx context.Context, extensionName string, eventTypes 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("todo")
+		return nil, fmt.Errorf("request failed with status %s", resp.Status)
 	}
 
 	registerResp := &RegisterResponse{}
@@ -138,7 +190,7 @@ func (c *Client) Register(ctx context.Context, extensionName string, eventTypes 
 
 	c.extensionID = resp.Header.Get(idHeader)
 	if c.extensionID == "" {
-		return nil, err
+		return nil, fmt.Errorf("could not find extension ID in register response header %s", idHeader)
 	}
 
 	return registerResp, nil
@@ -148,9 +200,6 @@ func (c *Client) Register(ctx context.Context, extensionName string, eventTypes 
 // By default, the Go HTTP client has no timeout, and in this case this is actually
 // the desired behavior to enable long polling of the Extensions API.
 func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
-	if c.extensionID == "" {
-		return nil, errors.New("not registered")
-	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/event/next", nil)
 	if err != nil {
 		return nil, err
@@ -163,7 +212,7 @@ func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("todo")
+		return nil, fmt.Errorf("request failed with status %s", resp.Status)
 	}
 	nextResp := &NextEventResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(nextResp); err != nil {
