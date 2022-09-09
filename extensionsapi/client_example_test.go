@@ -2,10 +2,13 @@ package extensionsapi_test
 
 import (
 	"context"
-	"github.com/zakharovvi/lambda-extension-framework/extensionsapi"
 	"log"
 	"net/http"
 	"os"
+	"runtime/debug"
+	"strings"
+
+	"github.com/zakharovvi/lambda-extension-framework/extensionsapi"
 )
 
 func ExampleClient() {
@@ -47,4 +50,33 @@ func ExampleRegister() {
 		log.Fatalln(err)
 	}
 	_ = client
+}
+
+func ExampleError() {
+	ctx := context.Background()
+
+	client, err := extensionsapi.Register(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	errorType := "Extension.UnknownReason"
+
+	errResp, err := client.InitError(ctx, errorType, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	_ = errResp
+
+	trace := strings.Split(string(debug.Stack()), "\n")
+	errorReq := &extensionsapi.ErrorRequest{
+		ErrorMessage: "text description of the error",
+		ErrorType:    errorType,
+		StackTrace:   trace,
+	}
+	errResp, err = client.ExitError(ctx, errorType, errorReq)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	_ = errResp
 }

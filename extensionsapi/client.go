@@ -29,11 +29,11 @@ const (
 	errorTypeHeader = "Lambda-Extension-Function-Error-Type"
 
 	// Spindown is a normal end to a function
-	Spindown ShutdownReason = "spindown"
+	Spindown ShutdownReason = "SPINDOWN"
 	// Timeout means the handler ran out of time
-	Timeout ShutdownReason = "timeout"
+	Timeout ShutdownReason = "TIMEOUT"
 	// Failure is any other shutdown type, such as out-of-memory
-	Failure ShutdownReason = "failure"
+	Failure ShutdownReason = "FAILURE"
 )
 
 type RegisterRequest struct {
@@ -42,10 +42,9 @@ type RegisterRequest struct {
 
 // RegisterResponse is the body of the response for /register
 type RegisterResponse struct {
-	FunctionName    string            `json:"functionName"`
-	FunctionVersion string            `json:"functionVersion"`
-	Handler         string            `json:"handler"`
-	Configuration   map[string]string `json:"configuration"`
+	FunctionName    string `json:"functionName"`
+	FunctionVersion string `json:"functionVersion"`
+	Handler         string `json:"handler"`
 }
 
 // NextEventResponse is the response for /event/next
@@ -70,8 +69,14 @@ type Tracing struct {
 	Value string `json:"value"`
 }
 
-// StatusResponse is the body of the response for /init/error and /exit/error
-type StatusResponse struct {
+type ErrorRequest struct {
+	ErrorMessage string   `json:"errorMessage"`
+	ErrorType    string   `json:"errorType"`
+	StackTrace   []string `json:"stackTrace"`
+}
+
+// ErrorResponse is the body of the response for /init/error and /exit/error
+type ErrorResponse struct {
 	Status string `json:"status"`
 }
 
@@ -162,7 +167,7 @@ func Register(ctx context.Context, opts ...Option) (*Client, error) {
 }
 
 func (c *Client) register(ctx context.Context, extensionName string, eventTypes []EventType) (*RegisterResponse, error) {
-	registerReq := RegisterRequest{EventTypes: eventTypes}
+	registerReq := RegisterRequest{eventTypes}
 	body, err := json.Marshal(&registerReq)
 	if err != nil {
 		return nil, err
@@ -214,6 +219,7 @@ func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request failed with status %s", resp.Status)
 	}
+
 	nextResp := &NextEventResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(nextResp); err != nil {
 		return nil, err
@@ -222,22 +228,31 @@ func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 }
 
 // InitError reports an initialization error to the platform. Call it when you registered but failed to initialize
-func (c *Client) InitError(ctx context.Context, errorType string) (*StatusResponse, error) {
-	return c.reportError(ctx, errorType, "/init/error")
+func (c *Client) InitError(ctx context.Context, errorType string, errorReq *ErrorRequest) (*ErrorResponse, error) {
+	return c.reportError(ctx, errorType, "/init/error", errorReq)
 }
 
 // ExitError reports an error to the platform before exiting. Call it when you encounter an unexpected failure
-func (c *Client) ExitError(ctx context.Context, errorType string) (*StatusResponse, error) {
-	return c.reportError(ctx, errorType, "/exit/error")
+func (c *Client) ExitError(ctx context.Context, errorType string, errorReq *ErrorRequest) (*ErrorResponse, error) {
+	return c.reportError(ctx, errorType, "/exit/error", errorReq)
 }
 
-func (c *Client) reportError(ctx context.Context, errorType, action string) (*StatusResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+action, nil)
+func (c *Client) reportError(ctx context.Context, errorType, action string, errorReq *ErrorRequest) (*ErrorResponse, error) {
+	var body []byte
+	if errorReq != nil {
+		var err error
+		if body, err = json.Marshal(errorReq); err != nil {
+			return nil, err
+		}
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+action, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set(idHeader, c.extensionID)
 	req.Header.Set(errorTypeHeader, errorType)
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -246,10 +261,10 @@ func (c *Client) reportError(ctx context.Context, errorType, action string) (*St
 		return nil, fmt.Errorf("request failed with status %s", resp.Status)
 	}
 	defer resp.Body.Close()
-	statusResp := &StatusResponse{}
 
-	if err := json.NewDecoder(resp.Body).Decode(statusResp); err != nil {
+	errorResp := &ErrorResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(errorResp); err != nil {
 		return nil, err
 	}
-	return statusResp, nil
+	return errorResp, nil
 }
