@@ -179,17 +179,9 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 	}
 	req.Header.Set(nameHeader, extensionName)
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request failed with status %s", resp.Status)
-	}
-
 	registerResp := &RegisterResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(registerResp); err != nil {
+	resp, err := c.doRequest(req, registerResp)
+	if err != nil {
 		return nil, err
 	}
 
@@ -211,17 +203,8 @@ func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 	}
 	req.Header.Set(idHeader, c.extensionID)
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request failed with status %s", resp.Status)
-	}
-
 	nextResp := &NextEventResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(nextResp); err != nil {
+	if _, err := c.doRequest(req, nextResp); err != nil {
 		return nil, err
 	}
 	return nextResp, nil
@@ -253,18 +236,25 @@ func (c *Client) reportError(ctx context.Context, errorType, action string, erro
 	req.Header.Set(idHeader, c.extensionID)
 	req.Header.Set(errorTypeHeader, errorType)
 
+	errorResp := &ErrorResponse{}
+	if _, err := c.doRequest(req, errorResp); err != nil {
+		return nil, err
+	}
+	return errorResp, nil
+}
+
+func (c *Client) doRequest(req *http.Request, out interface{}) (*http.Response, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request failed with status %s", resp.Status)
 	}
-	defer resp.Body.Close()
 
-	errorResp := &ErrorResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(errorResp); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
 		return nil, err
 	}
-	return errorResp, nil
+	return resp, nil
 }
