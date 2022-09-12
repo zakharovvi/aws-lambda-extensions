@@ -8,7 +8,7 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/zakharovvi/lambda-extension-framework/extensionsapi"
+	"github.com/zakharovvi/lambda-extension-api/extensionsapi"
 )
 
 func ExampleClient() {

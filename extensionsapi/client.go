@@ -180,7 +180,7 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 	req.Header.Set(nameHeader, extensionName)
 
 	registerResp := &RegisterResponse{}
-	resp, err := c.doRequest(req, registerResp)
+	resp, err := c.doRequest(req, http.StatusOK, registerResp)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 	req.Header.Set(idHeader, c.extensionID)
 
 	nextResp := &NextEventResponse{}
-	if _, err := c.doRequest(req, nextResp); err != nil {
+	if _, err := c.doRequest(req, http.StatusOK, nextResp); err != nil {
 		return nil, err
 	}
 	return nextResp, nil
@@ -237,19 +237,19 @@ func (c *Client) reportError(ctx context.Context, errorType, action string, erro
 	req.Header.Set(errorTypeHeader, errorType)
 
 	errorResp := &ErrorResponse{}
-	if _, err := c.doRequest(req, errorResp); err != nil {
+	if _, err := c.doRequest(req, http.StatusAccepted, errorResp); err != nil {
 		return nil, err
 	}
 	return errorResp, nil
 }
 
-func (c *Client) doRequest(req *http.Request, out interface{}) (*http.Response, error) {
+func (c *Client) doRequest(req *http.Request, wantStatus int, out interface{}) (*http.Response, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != wantStatus {
 		return nil, fmt.Errorf("request failed with status %s", resp.Status)
 	}
 
