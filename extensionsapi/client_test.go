@@ -44,7 +44,7 @@ var (
 	respShutdown = []byte(`
 		{
 		  "eventType": "SHUTDOWN",
-		  "shutdownReason": "SPINDOWN",
+		  "shutdownReason": "spindown",
 		  "deadlineMs": 676051
 		}
 	`)

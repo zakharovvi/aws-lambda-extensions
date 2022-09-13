@@ -30,11 +30,11 @@ const (
 	errorTypeHeader = "Lambda-Extension-Function-Error-Type"
 
 	// Spindown is a normal end to a function
-	Spindown ShutdownReason = "SPINDOWN"
+	Spindown ShutdownReason = "spindown"
 	// Timeout means the handler ran out of time
-	Timeout ShutdownReason = "TIMEOUT"
+	Timeout ShutdownReason = "timout"
 	// Failure is any other shutdown type, such as out-of-memory
-	Failure ShutdownReason = "FAILURE"
+	Failure ShutdownReason = "failure"
 )
 
 type RegisterRequest struct {
