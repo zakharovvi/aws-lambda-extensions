@@ -62,6 +62,7 @@ func ExampleError() {
 
 	errorType := "Extension.UnknownReason"
 
+	// ErrorRequest is optional
 	errResp, err := client.InitError(ctx, errorType, nil)
 	if err != nil {
 		log.Fatalln(err)

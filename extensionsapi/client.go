@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 // EventType represents the type of events received from /event/next
@@ -140,6 +141,7 @@ type Client struct {
 // and the extension name in the headers.
 func Register(ctx context.Context, opts ...Option) (*Client, error) {
 	extensionName, _ := os.Executable()
+	extensionName = filepath.Base(extensionName)
 	options := options{
 		extensionName:       extensionName,
 		awsLambdaRuntimeAPI: os.Getenv("AWS_LAMBDA_RUNTIME_API"),

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ var (
 			"functionName": "helloWorld",
 			"functionVersion": "$LATEST",
 			"handler": "lambda_function.lambda_handler"
-		}  
+		}
 	`)
 
 	respNextEvent []byte
@@ -38,14 +39,14 @@ var (
 				"type": "X-Amzn-Trace-Id",
 				"value": "Root=1-5f35ae12-0c0fec141ab77a00bc047aa2;Parent=2be948a625588e32;Sampled=1"
 			}
-		}     
+		}
 	`)
 	respShutdown = []byte(`
-		{ 
-		  "eventType": "SHUTDOWN", 
-		  "shutdownReason": "SPINDOWN", 
+		{
+		  "eventType": "SHUTDOWN",
+		  "shutdownReason": "SPINDOWN",
 		  "deadlineMs": 676051
-		}   
+		}
 	`)
 	respError = []byte(`
 		{
@@ -100,14 +101,31 @@ func TestInitError(t *testing.T) {
 	require.NoError(t, err)
 	defer server.Close()
 
-	errorReq := &extensionsapi.ErrorRequest{
-		ErrorMessage: testErrorMessage,
-		ErrorType:    testErrorType,
-		StackTrace:   nil,
+	tests := []struct {
+		name     string
+		errorReq *extensionsapi.ErrorRequest
+	}{
+		{
+			name:     "nil request",
+			errorReq: nil,
+		},
+		{
+			name: "with request",
+			errorReq: &extensionsapi.ErrorRequest{
+				ErrorMessage: testErrorMessage,
+				ErrorType:    testErrorType,
+				StackTrace:   nil,
+			},
+		},
 	}
-	status, err := client.InitError(context.Background(), testErrorType, errorReq)
-	require.NoError(t, err)
-	assert.Equal(t, testErrorStatus, status.Status)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			status, err := client.InitError(context.Background(), testErrorType, tt.errorReq)
+			require.NoError(t, err)
+			assert.Equal(t, testErrorStatus, status.Status)
+		})
+	}
 }
 
 func TestExitError(t *testing.T) {
@@ -115,14 +133,31 @@ func TestExitError(t *testing.T) {
 	require.NoError(t, err)
 	defer server.Close()
 
-	errorReq := &extensionsapi.ErrorRequest{
-		ErrorMessage: testErrorMessage,
-		ErrorType:    testErrorType,
-		StackTrace:   nil,
+	tests := []struct {
+		name     string
+		errorReq *extensionsapi.ErrorRequest
+	}{
+		{
+			name:     "nil request",
+			errorReq: nil,
+		},
+		{
+			name: "with request",
+			errorReq: &extensionsapi.ErrorRequest{
+				ErrorMessage: testErrorMessage,
+				ErrorType:    testErrorType,
+				StackTrace:   nil,
+			},
+		},
 	}
-	status, err := client.ExitError(context.Background(), testErrorType, errorReq)
-	require.NoError(t, err)
-	assert.Equal(t, testErrorStatus, status.Status)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			status, err := client.ExitError(context.Background(), testErrorType, tt.errorReq)
+			require.NoError(t, err)
+			assert.Equal(t, testErrorStatus, status.Status)
+		})
+	}
 }
 
 func register(t *testing.T) (*extensionsapi.Client, *httptest.Server, error) {
@@ -142,7 +177,7 @@ func startServer(t *testing.T) *httptest.Server {
 		defer r.Body.Close()
 
 		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, os.Args[0], r.Header.Get("Lambda-Extension-Name"))
+		assert.Equal(t, filepath.Base(os.Args[0]), r.Header.Get("Lambda-Extension-Name"))
 
 		req, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -177,7 +212,10 @@ func startServer(t *testing.T) *httptest.Server {
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.JSONEq(t, `{"errorMessage": "text description of the error", "errorType": "extension.TestReason", "stackTrace": null}`, string(req))
+		// body can be empty
+		if len(req) != 0 {
+			assert.JSONEq(t, `{"errorMessage": "text description of the error", "errorType": "extension.TestReason", "stackTrace": null}`, string(req))
+		}
 
 		w.WriteHeader(http.StatusAccepted)
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
@@ -196,7 +234,10 @@ func startServer(t *testing.T) *httptest.Server {
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.JSONEq(t, `{"errorMessage": "text description of the error", "errorType": "extension.TestReason", "stackTrace": null}`, string(req))
+		// body can be empty
+		if len(req) != 0 {
+			assert.JSONEq(t, `{"errorMessage": "text description of the error", "errorType": "extension.TestReason", "stackTrace": null}`, string(req))
+		}
 
 		w.WriteHeader(http.StatusAccepted)
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
