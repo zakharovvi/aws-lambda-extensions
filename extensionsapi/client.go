@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -251,12 +252,16 @@ func (c *Client) doRequest(req *http.Request, wantStatus int, out interface{}) (
 		return nil, err
 	}
 	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	if resp.StatusCode != wantStatus {
-		return nil, fmt.Errorf("request failed with status %s", resp.Status)
+		return nil, fmt.Errorf("request failed with status %s and body: %s", resp.Status, body)
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
-		return nil, err
+	if err := json.Unmarshal(body, out); err != nil {
+		return nil, fmt.Errorf("could not unmarshal response %s: %w", body, err)
 	}
 	return resp, nil
 }
