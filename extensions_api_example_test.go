@@ -1,4 +1,4 @@
-package extensionsapi_test
+package lambdaextensions_test
 
 import (
 	"context"
@@ -8,13 +8,13 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/zakharovvi/lambda-extension-api/extensionsapi"
+	"github.com/zakharovvi/lambdaextensions"
 )
 
 func ExampleClient() {
 	ctx := context.Background()
 
-	client, err := extensionsapi.Register(ctx)
+	client, err := lambdaextensions.Register(ctx)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -28,7 +28,7 @@ func ExampleClient() {
 		log.Fatalln(err)
 	}
 
-	if event.EventType == extensionsapi.Invoke {
+	if event.EventType == lambdaextensions.Invoke {
 		log.Println(event.RequestID)
 	} else {
 		log.Println(event.ShutdownReason)
@@ -39,12 +39,12 @@ func ExampleClient() {
 func ExampleRegister() {
 	ctx := context.Background()
 
-	client, err := extensionsapi.Register(
+	client, err := lambdaextensions.Register(
 		ctx,
-		extensionsapi.WithEventTypes([]extensionsapi.EventType{extensionsapi.Invoke}),
-		extensionsapi.WithExtensionName("/path/to/binary"),
-		extensionsapi.WithAWSLambdaRuntimeAPI("127.0.0.1:8080"),
-		extensionsapi.WithHTTPClient(http.DefaultClient),
+		lambdaextensions.WithEventTypes([]lambdaextensions.EventType{lambdaextensions.Invoke}),
+		lambdaextensions.WithExtensionName("/path/to/binary"),
+		lambdaextensions.WithAWSLambdaRuntimeAPI("127.0.0.1:8080"),
+		lambdaextensions.WithHTTPClient(http.DefaultClient),
 	)
 	if err != nil {
 		log.Fatalln(err)
@@ -55,7 +55,7 @@ func ExampleRegister() {
 func ExampleError() {
 	ctx := context.Background()
 
-	client, err := extensionsapi.Register(ctx)
+	client, err := lambdaextensions.Register(ctx)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -70,7 +70,7 @@ func ExampleError() {
 	_ = errResp
 
 	trace := strings.Split(string(debug.Stack()), "\n")
-	errorReq := &extensionsapi.ErrorRequest{
+	errorReq := &lambdaextensions.ErrorRequest{
 		ErrorMessage: "text description of the error",
 		ErrorType:    errorType,
 		StackTrace:   trace,

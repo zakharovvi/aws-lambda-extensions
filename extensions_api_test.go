@@ -1,4 +1,4 @@
-package extensionsapi_test
+package lambdaextensions_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zakharovvi/lambda-extension-api/extensionsapi"
+	"github.com/zakharovvi/lambdaextensions"
 )
 
 var (
@@ -74,7 +74,7 @@ func TestNextEvent_Invoke(t *testing.T) {
 	event, err := client.NextEvent(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, extensionsapi.Invoke, event.EventType)
+	assert.Equal(t, lambdaextensions.Invoke, event.EventType)
 	assert.Equal(t, "3da1f2dc-3222-475e-9205-e2e6c6318895", event.RequestID)
 	assert.Equal(t, "arn:aws:lambda:us-east-1:123456789012:function:ExtensionTest", event.InvokedFunctionArn)
 	assert.Equal(t, "3da1f2dc-3222-475e-9205-e2e6c6318895", event.RequestID)
@@ -91,8 +91,8 @@ func TestNextEvent_Shutdown(t *testing.T) {
 	respNextEvent = respShutdown
 	event, err := client.NextEvent(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, extensionsapi.Shutdown, event.EventType)
-	assert.Equal(t, extensionsapi.Spindown, event.ShutdownReason)
+	assert.Equal(t, lambdaextensions.Shutdown, event.EventType)
+	assert.Equal(t, lambdaextensions.Spindown, event.ShutdownReason)
 	assert.Equal(t, int64(676051), event.DeadlineMs)
 }
 
@@ -103,7 +103,7 @@ func TestInitError(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		errorReq *extensionsapi.ErrorRequest
+		errorReq *lambdaextensions.ErrorRequest
 	}{
 		{
 			name:     "nil request",
@@ -111,7 +111,7 @@ func TestInitError(t *testing.T) {
 		},
 		{
 			name: "with request",
-			errorReq: &extensionsapi.ErrorRequest{
+			errorReq: &lambdaextensions.ErrorRequest{
 				ErrorMessage: testErrorMessage,
 				ErrorType:    testErrorType,
 				StackTrace:   nil,
@@ -135,7 +135,7 @@ func TestExitError(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		errorReq *extensionsapi.ErrorRequest
+		errorReq *lambdaextensions.ErrorRequest
 	}{
 		{
 			name:     "nil request",
@@ -143,7 +143,7 @@ func TestExitError(t *testing.T) {
 		},
 		{
 			name: "with request",
-			errorReq: &extensionsapi.ErrorRequest{
+			errorReq: &lambdaextensions.ErrorRequest{
 				ErrorMessage: testErrorMessage,
 				ErrorType:    testErrorType,
 				StackTrace:   nil,
@@ -160,14 +160,14 @@ func TestExitError(t *testing.T) {
 	}
 }
 
-func register(t *testing.T) (*extensionsapi.Client, *httptest.Server, error) {
+func register(t *testing.T) (*lambdaextensions.Client, *httptest.Server, error) {
 	server := startServer(t)
 
 	if err := os.Setenv("AWS_LAMBDA_RUNTIME_API", server.Listener.Addr().String()); err != nil {
 		t.Fatal(err)
 	}
 
-	client, err := extensionsapi.Register(context.Background())
+	client, err := lambdaextensions.Register(context.Background())
 	return client, server, err
 }
 

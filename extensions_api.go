@@ -1,4 +1,4 @@
-package extensionsapi
+package lambdaextensions
 
 import (
 	"bytes"
