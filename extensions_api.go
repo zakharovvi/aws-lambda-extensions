@@ -181,6 +181,7 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 		return nil, err
 	}
 	req.Header.Set(nameHeader, extensionName)
+	req.Header.Set("Content-Type", "application/json")
 
 	registerResp := &RegisterResponse{}
 	resp, err := c.doRequest(req, http.StatusOK, registerResp)
@@ -238,6 +239,7 @@ func (c *Client) reportError(ctx context.Context, errorType, action string, erro
 	}
 	req.Header.Set(idHeader, c.extensionID)
 	req.Header.Set(errorTypeHeader, errorType)
+	req.Header.Set("Content-Type", "application/json")
 
 	errorResp := &ErrorResponse{}
 	if _, err := c.doRequest(req, http.StatusAccepted, errorResp); err != nil {
