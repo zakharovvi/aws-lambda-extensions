@@ -18,7 +18,7 @@ var (
 	testIdentifier   = "test-identifier"
 	testErrorType    = "extension.TestReason"
 	testErrorMessage = "text description of the error"
-	testErrorStatus  = "TODO"
+	testErrorStatus  = "OK"
 
 	respRegister = []byte(`
 		{
@@ -50,7 +50,7 @@ var (
 	`)
 	respError = []byte(`
 		{
-			"status": "TODO"
+			"status": "OK"
 		}
 	`)
 )
