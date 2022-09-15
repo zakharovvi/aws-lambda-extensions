@@ -56,7 +56,7 @@ var (
 )
 
 func TestRegister(t *testing.T) {
-	client, server, err := register(t)
+	client, server, _, err := register(t)
 	require.NoError(t, err)
 	defer server.Close()
 
@@ -66,9 +66,20 @@ func TestRegister(t *testing.T) {
 }
 
 func TestNextEvent_Invoke(t *testing.T) {
-	client, server, err := register(t)
+	client, server, mux, err := register(t)
 	require.NoError(t, err)
 	defer server.Close()
+	mux.HandleFunc("/2020-01-01/extension/event/next", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+
+		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		if _, err := w.Write(respNextEvent); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	respNextEvent = respInvoke
 	event, err := client.NextEvent(context.Background())
@@ -84,9 +95,20 @@ func TestNextEvent_Invoke(t *testing.T) {
 }
 
 func TestNextEvent_Shutdown(t *testing.T) {
-	client, server, err := register(t)
+	client, server, mux, err := register(t)
 	require.NoError(t, err)
 	defer server.Close()
+	mux.HandleFunc("/2020-01-01/extension/event/next", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+
+		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		if _, err := w.Write(respNextEvent); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	respNextEvent = respShutdown
 	event, err := client.NextEvent(context.Background())
@@ -97,9 +119,31 @@ func TestNextEvent_Shutdown(t *testing.T) {
 }
 
 func TestInitError(t *testing.T) {
-	client, server, err := register(t)
+	client, server, mux, err := register(t)
 	require.NoError(t, err)
 	defer server.Close()
+	mux.HandleFunc("/2020-01-01/extension/init/error", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+		assert.Equal(t, testErrorType, r.Header.Get("Lambda-Extension-Function-Error-Type"))
+
+		req, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// body can be empty
+		if len(req) != 0 {
+			assert.JSONEq(t, `{"errorMessage": "text description of the error", "errorType": "extension.TestReason", "stackTrace": null}`, string(req))
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		if _, err := w.Write(respError); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	tests := []struct {
 		name     string
@@ -129,9 +173,31 @@ func TestInitError(t *testing.T) {
 }
 
 func TestExitError(t *testing.T) {
-	client, server, err := register(t)
+	client, server, mux, err := register(t)
 	require.NoError(t, err)
 	defer server.Close()
+	mux.HandleFunc("/2020-01-01/extension/exit/error", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+		assert.Equal(t, testErrorType, r.Header.Get("Lambda-Extension-Function-Error-Type"))
+
+		req, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// body can be empty
+		if len(req) != 0 {
+			assert.JSONEq(t, `{"errorMessage": "text description of the error", "errorType": "extension.TestReason", "stackTrace": null}`, string(req))
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		if _, err := w.Write(respError); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	tests := []struct {
 		name     string
@@ -160,18 +226,7 @@ func TestExitError(t *testing.T) {
 	}
 }
 
-func register(t *testing.T) (*lambdaextensions.Client, *httptest.Server, error) {
-	server := startServer(t)
-
-	if err := os.Setenv("AWS_LAMBDA_RUNTIME_API", server.Listener.Addr().String()); err != nil {
-		t.Fatal(err)
-	}
-
-	client, err := lambdaextensions.Register(context.Background())
-	return client, server, err
-}
-
-func startServer(t *testing.T) *httptest.Server {
+func register(t *testing.T) (*lambdaextensions.Client, *httptest.Server, *http.ServeMux, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/2020-01-01/extension/register", func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -190,61 +245,11 @@ func startServer(t *testing.T) *httptest.Server {
 			t.Fatal(err)
 		}
 	})
-	mux.HandleFunc("/2020-01-01/extension/event/next", func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
+	server := httptest.NewServer(mux)
 
-		assert.Equal(t, http.MethodGet, r.Method)
-		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
-
-		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
-		if _, err := w.Write(respNextEvent); err != nil {
-			t.Fatal(err)
-		}
-	})
-	mux.HandleFunc("/2020-01-01/extension/init/error", func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
-		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
-		assert.Equal(t, testErrorType, r.Header.Get("Lambda-Extension-Function-Error-Type"))
-
-		req, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-		// body can be empty
-		if len(req) != 0 {
-			assert.JSONEq(t, `{"errorMessage": "text description of the error", "errorType": "extension.TestReason", "stackTrace": null}`, string(req))
-		}
-
-		w.WriteHeader(http.StatusAccepted)
-		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
-		if _, err := w.Write(respError); err != nil {
-			t.Fatal(err)
-		}
-	})
-	mux.HandleFunc("/2020-01-01/extension/exit/error", func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
-		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
-		assert.Equal(t, testErrorType, r.Header.Get("Lambda-Extension-Function-Error-Type"))
-
-		req, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-		// body can be empty
-		if len(req) != 0 {
-			assert.JSONEq(t, `{"errorMessage": "text description of the error", "errorType": "extension.TestReason", "stackTrace": null}`, string(req))
-		}
-
-		w.WriteHeader(http.StatusAccepted)
-		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
-		if _, err := w.Write(respError); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	return httptest.NewServer(mux)
+	if err := os.Setenv("AWS_LAMBDA_RUNTIME_API", server.Listener.Addr().String()); err != nil {
+		t.Fatal(err)
+	}
+	client, err := lambdaextensions.Register(context.Background())
+	return client, server, mux, err
 }

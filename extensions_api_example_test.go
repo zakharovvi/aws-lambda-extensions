@@ -11,6 +11,7 @@ import (
 	"github.com/zakharovvi/lambdaextensions"
 )
 
+// End to end example how to use Client, process events and handle errors
 func ExampleClient() {
 	ctx := context.Background()
 
@@ -54,13 +55,13 @@ func ExampleClient() {
 	}
 }
 
-// Register supports optional arguments
+// Register supports optional arguments to override defaults
 func ExampleRegister() {
 	ctx := context.Background()
 
 	client, err := lambdaextensions.Register(
 		ctx,
-		lambdaextensions.WithEventTypes([]lambdaextensions.EventType{lambdaextensions.Invoke}),
+		lambdaextensions.WithEventTypes([]lambdaextensions.EventType{lambdaextensions.Shutdown}),
 		lambdaextensions.WithExtensionName("binary_file_basename"),
 		lambdaextensions.WithAWSLambdaRuntimeAPI("127.0.0.1:8080"),
 		lambdaextensions.WithHTTPClient(http.DefaultClient),

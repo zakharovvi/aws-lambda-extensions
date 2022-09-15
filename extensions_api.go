@@ -131,7 +131,7 @@ func WithHTTPClient(httpClient *http.Client) Option {
 }
 
 type Client struct {
-	baseURL      string
+	runtimeAPI   string
 	httpClient   *http.Client
 	extensionID  string
 	RegisterResp *RegisterResponse
@@ -157,7 +157,7 @@ func Register(ctx context.Context, opts ...Option) (*Client, error) {
 	}
 
 	client := &Client{
-		baseURL:    fmt.Sprintf("http://%s/2020-01-01/extension", options.awsLambdaRuntimeAPI),
+		runtimeAPI: options.awsLambdaRuntimeAPI,
 		httpClient: options.httpClient,
 	}
 	var err error
@@ -176,7 +176,8 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/register", bytes.NewReader(body))
+	url := fmt.Sprintf("http://%s/2020-01-01/extension/register", c.runtimeAPI)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +202,8 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 // By default, the Go HTTP client has no timeout, and in this case this is actually
 // the desired behavior to enable long polling of the Extensions API.
 func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/event/next", nil)
+	url := fmt.Sprintf("http://%s/2020-01-01/extension/event/next", c.runtimeAPI)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +235,8 @@ func (c *Client) reportError(ctx context.Context, errorType, action string, erro
 		}
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+action, bytes.NewReader(body))
+	url := fmt.Sprintf("http://%s/2020-01-01/extension%s", c.runtimeAPI, action)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -262,8 +265,10 @@ func (c *Client) doRequest(req *http.Request, wantStatus int, out interface{}) (
 		return nil, fmt.Errorf("request failed with status %s and body: %s", resp.Status, body)
 	}
 
-	if err := json.Unmarshal(body, out); err != nil {
-		return nil, fmt.Errorf("could not unmarshal response %s: %w", body, err)
+	if out != nil {
+		if err := json.Unmarshal(body, out); err != nil {
+			return nil, fmt.Errorf("could not unmarshal response %s: %w", body, err)
+		}
 	}
 	return resp, nil
 }
