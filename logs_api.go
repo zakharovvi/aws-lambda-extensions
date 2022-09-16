@@ -5,26 +5,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"time"
 )
 
-// LogType represents the type of logs in Lambda
-type LogType string
+// LogSubscriptionType represents the type of logs in Lambda
+type LogSubscriptionType string
 
 const (
 	// Platform is to receive logs emitted by the platform
-	Platform LogType = "platform"
+	Platform LogSubscriptionType = "platform"
 	// Function is to receive logs emitted by the function
-	Function LogType = "function"
+	Function LogSubscriptionType = "function"
 	// Extension is to receive logs emitted by the extension
-	Extension LogType = "extension"
-)
-
-type SubEventType string
-
-const (
-	// RuntimeDone event is sent when lambda function is finished it's execution
-	RuntimeDone SubEventType = "platform.runtimeDone"
+	Extension LogSubscriptionType = "extension"
 )
 
 // BufferingCfg is the configuration set for receiving logs from Logs API. Whichever of the conditions below is met first, the logs will be sent
@@ -77,13 +72,13 @@ const (
 
 // SubscribeRequest is the request body that is sent to Logs API on subscribe
 type SubscribeRequest struct {
-	SchemaVersion SchemaVersion `json:"schemaVersion,omitempty"`
-	LogTypes      []LogType     `json:"types"`
-	BufferingCfg  *BufferingCfg `json:"buffering,omitempty"`
-	Destination   *Destination  `json:"destination"`
+	SchemaVersion SchemaVersion         `json:"schemaVersion,omitempty"`
+	LogTypes      []LogSubscriptionType `json:"types"`
+	BufferingCfg  *BufferingCfg         `json:"buffering,omitempty"`
+	Destination   *Destination          `json:"destination"`
 }
 
-func NewSubscribeRequest(url string, logTypes []LogType) *SubscribeRequest {
+func NewSubscribeRequest(url string, logTypes []LogSubscriptionType) *SubscribeRequest {
 	if len(logTypes) == 0 {
 		logTypes = append(logTypes, Platform, Function, Extension)
 	}
@@ -113,5 +108,151 @@ func (c *Client) Subscribe(ctx context.Context, subscribeReq *SubscribeRequest) 
 		return err
 	}
 
+	return nil
+}
+
+type LogType string
+
+const (
+	LogPlatformStart            LogType = "platform.start"
+	LogPlatformEnd              LogType = "platform.end"
+	LogPlatformReport           LogType = "platform.report"
+	LogPlatformExtension        LogType = "platform.extension"
+	LogPlatformLogsSubscription LogType = "platform.logsSubscription"
+	LogPlatformLogsDropped      LogType = "platform.logsDropped"
+	LogPlatformFault            LogType = "platform.fault"
+	LogPlatformRuntimeDone      LogType = "platform.runtimeDone"
+	LogFunction                 LogType = "function"
+	LogExtension                LogType = "extension"
+)
+
+type Log struct {
+	LogType   LogType         `json:"type"`
+	Time      time.Time       `json:"time"`
+	RawRecord json.RawMessage `json:"record"`
+	Record    any
+}
+
+type PlatformStartRecord struct {
+	RequestID string `json:"requestId"`
+	Version   string `json:"version,omitempty"`
+}
+
+type PlatformEndRecord struct {
+	RequestID string `json:"requestId"`
+}
+
+type PlatformReportRecord struct {
+	Metrics   Metrics `json:"metrics"`
+	RequestID string  `json:"requestId"`
+	Tracing   Tracing `json:"tracing,omitempty"`
+}
+type Metrics struct {
+	DurationMs       float64 `json:"durationMs"`
+	BilledDurationMs float64 `json:"billedDurationMs"`
+	MemorySizeMB     uint64  `json:"memorySizeMB"`
+	MaxMemoryUsedMB  uint64  `json:"maxMemoryUsedMB"`
+	InitDurationMs   float64 `json:"initDurationMs"`
+}
+
+type PlatformExtensionRecord struct {
+	Events []EventType `json:"events"`
+	Name   string      `json:"name"`
+	State  string      `json:"state"`
+}
+
+type PlatformLogsSubscriptionRecord struct {
+	Name  string                `json:"name"`
+	State string                `json:"state"`
+	Types []LogSubscriptionType `json:"types"`
+}
+
+type PlatformLogsDroppedRecord struct {
+	DroppedBytes   uint64 `json:"droppedBytes"`
+	DroppedRecords uint64 `json:"droppedRecords"`
+	Reason         string `json:"reason"`
+}
+
+type PlatformFaultRecord string
+
+type PlatformRuntimeDoneRecord struct {
+	RequestID string            `json:"requestId"`
+	Status    RuntimeDoneStatus `json:"status"`
+}
+type RuntimeDoneStatus string
+
+const (
+	RuntimeDoneSuccess RuntimeDoneStatus = "success"
+	RuntimeDoneFailure RuntimeDoneStatus = "failure"
+	RuntimeDoneTimeout RuntimeDoneStatus = "timeout"
+)
+
+type FunctionRecord string
+
+type ExtensionRecord string
+
+// DecodeLogs consumes all logs from json array stream and close it afterwards
+func DecodeLogs(r io.ReadCloser, logs chan<- Log) error {
+	defer func() {
+		_, _ = io.Copy(io.Discard, r)
+		_ = r.Close()
+	}()
+
+	d := json.NewDecoder(r)
+	if err := readBracket(d, "["); err != nil {
+		return err
+	}
+	for d.More() {
+		msg := Log{}
+		if err := d.Decode(&msg); err != nil {
+			return err
+		}
+		switch msg.LogType {
+		case LogPlatformStart:
+			msg.Record = new(PlatformStartRecord)
+		case LogPlatformEnd:
+			msg.Record = new(PlatformEndRecord)
+		case LogPlatformReport:
+			msg.Record = new(PlatformReportRecord)
+		case LogPlatformExtension:
+			msg.Record = new(PlatformExtensionRecord)
+		case LogPlatformLogsSubscription:
+			msg.Record = new(PlatformLogsSubscriptionRecord)
+		case LogPlatformLogsDropped:
+			msg.Record = new(PlatformLogsDroppedRecord)
+		case LogPlatformFault:
+			msg.Record = new(PlatformFaultRecord)
+		case LogPlatformRuntimeDone:
+			msg.Record = new(PlatformRuntimeDoneRecord)
+		case LogFunction:
+			msg.Record = new(FunctionRecord)
+		case LogExtension:
+			msg.Record = new(ExtensionRecord)
+		default:
+			return fmt.Errorf(`could not decode unknown log type "%s" and record "%s"`, msg.LogType, msg.RawRecord)
+		}
+		if err := json.Unmarshal(msg.RawRecord, msg.Record); err != nil {
+			return fmt.Errorf("could not unmarshal record %s for log type %s with error: %w", msg.RawRecord, msg.LogType, err)
+		}
+		logs <- msg
+	}
+	if err := readBracket(d, "]"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func readBracket(d *json.Decoder, want string) error {
+	t, err := d.Token()
+	if err != nil {
+		return err
+	}
+	delim, ok := t.(json.Delim)
+	if !ok {
+		return fmt.Errorf("malformed json array, want %s, got %v", want, t)
+	}
+	if delim.String() != want {
+		return fmt.Errorf("malformed json array, want %s, got %v", want, delim.String())
+	}
 	return nil
 }

@@ -37,3 +37,35 @@ func ExampleClient_Subscribe() {
 		_, _ = client.NextEvent(ctx)
 	}
 }
+
+func ExampleDecodeLogs() {
+	// 1. create channel for decoded logs
+	logsCh := make(chan lambdaextensions.Log)
+
+	// 2. consume decoded logs from channel
+	go func() {
+		for msg := range logsCh {
+			log.Println(msg.LogType)
+			log.Println(msg.Time)
+
+			// 3. type cast log records and access fields
+			report, ok := msg.Record.(lambdaextensions.PlatformReportRecord)
+			if !ok {
+				continue
+			}
+			log.Println(report.RequestID)
+			log.Println(report.Metrics.BilledDurationMs)
+			log.Println(report.Metrics.MaxMemoryUsedMB)
+		}
+	}()
+
+	// 4. use DecodeLogs in HTTP handler
+	http.HandleFunc("/logs-receiver", func(w http.ResponseWriter, r *http.Request) {
+		if err := lambdaextensions.DecodeLogs(r.Body, logsCh); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			log.Fatal(err)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+	log.Fatal(http.ListenAndServe("", nil))
+}
