@@ -1,7 +1,8 @@
-package lambdaextensions_test
+package extapi_test
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zakharovvi/lambdaextensions"
+	"github.com/zakharovvi/lambda-extensions/extapi"
 )
 
 var (
@@ -85,7 +86,7 @@ func TestNextEvent_Invoke(t *testing.T) {
 	event, err := client.NextEvent(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, lambdaextensions.Invoke, event.EventType)
+	assert.Equal(t, extapi.Invoke, event.EventType)
 	assert.Equal(t, "3da1f2dc-3222-475e-9205-e2e6c6318895", event.RequestID)
 	assert.Equal(t, "arn:aws:lambda:us-east-1:123456789012:function:ExtensionTest", event.InvokedFunctionArn)
 	assert.Equal(t, "3da1f2dc-3222-475e-9205-e2e6c6318895", event.RequestID)
@@ -113,8 +114,8 @@ func TestNextEvent_Shutdown(t *testing.T) {
 	respNextEvent = respShutdown
 	event, err := client.NextEvent(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, lambdaextensions.Shutdown, event.EventType)
-	assert.Equal(t, lambdaextensions.Spindown, event.ShutdownReason)
+	assert.Equal(t, extapi.Shutdown, event.EventType)
+	assert.Equal(t, extapi.Spindown, event.ShutdownReason)
 	assert.Equal(t, int64(676051), event.DeadlineMs)
 }
 
@@ -147,7 +148,7 @@ func TestInitError(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		errorReq *lambdaextensions.ErrorRequest
+		errorReq *extapi.ErrorRequest
 	}{
 		{
 			name:     "nil request",
@@ -155,7 +156,7 @@ func TestInitError(t *testing.T) {
 		},
 		{
 			name: "with request",
-			errorReq: &lambdaextensions.ErrorRequest{
+			errorReq: &extapi.ErrorRequest{
 				ErrorMessage: testErrorMessage,
 				ErrorType:    testErrorType,
 				StackTrace:   nil,
@@ -201,7 +202,7 @@ func TestExitError(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		errorReq *lambdaextensions.ErrorRequest
+		errorReq *extapi.ErrorRequest
 	}{
 		{
 			name:     "nil request",
@@ -209,7 +210,7 @@ func TestExitError(t *testing.T) {
 		},
 		{
 			name: "with request",
-			errorReq: &lambdaextensions.ErrorRequest{
+			errorReq: &extapi.ErrorRequest{
 				ErrorMessage: testErrorMessage,
 				ErrorType:    testErrorType,
 				StackTrace:   nil,
@@ -226,7 +227,7 @@ func TestExitError(t *testing.T) {
 	}
 }
 
-func register(t *testing.T) (*lambdaextensions.Client, *httptest.Server, *http.ServeMux, error) {
+func register(t *testing.T) (*extapi.Client, *httptest.Server, *http.ServeMux, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/2020-01-01/extension/register", func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -250,6 +251,45 @@ func register(t *testing.T) (*lambdaextensions.Client, *httptest.Server, *http.S
 	if err := os.Setenv("AWS_LAMBDA_RUNTIME_API", server.Listener.Addr().String()); err != nil {
 		t.Fatal(err)
 	}
-	client, err := lambdaextensions.Register(context.Background())
+	client, err := extapi.Register(context.Background())
 	return client, server, mux, err
+}
+
+const (
+	logReceiverURL = "http://example.com:8080/logs"
+)
+
+func TestSubscribe(t *testing.T) {
+	client, server, mux, err := register(t)
+	require.NoError(t, err)
+	defer server.Close()
+	mux.HandleFunc("/2020-08-15/logs", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		assert.Equal(t, http.MethodPut, r.Method)
+		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+
+		req, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		subscribeReq := &extapi.LogsSubscribeRequest{}
+		assert.NoError(t, json.Unmarshal(req, subscribeReq))
+		assert.Equal(t, logReceiverURL, subscribeReq.Destination.URI)
+		assert.Equal(
+			t,
+			[]extapi.LogSubscriptionType{extapi.Platform, extapi.Function, extapi.Extension},
+			subscribeReq.LogTypes,
+		)
+
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write([]byte("OK")); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	subscribeReq := extapi.NewLogsSubscribeRequest(logReceiverURL, nil)
+	err = client.LogsSubscribe(context.Background(), subscribeReq)
+	assert.NoError(t, err)
 }

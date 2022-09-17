@@ -1,4 +1,4 @@
-package lambdaextensions
+package extapi
 
 import (
 	"bytes"

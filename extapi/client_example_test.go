@@ -1,14 +1,15 @@
-package lambdaextensions_test
+package extapi_test
 
 import (
 	"context"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"runtime/debug"
 	"strings"
 
-	"github.com/zakharovvi/lambdaextensions"
+	"github.com/zakharovvi/lambda-extensions/extapi"
 )
 
 // End to end example how to use Client, process events and handle errors
@@ -16,7 +17,7 @@ func ExampleClient() {
 	ctx := context.Background()
 
 	// 1. register extension
-	client, err := lambdaextensions.Register(ctx)
+	client, err := extapi.Register(ctx)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -41,12 +42,12 @@ func ExampleClient() {
 			_, _ = client.ExitError(ctx, "ExtensionName.Reason", nil)
 			log.Fatalln(err)
 		}
-		if event.EventType == lambdaextensions.Shutdown {
+		if event.EventType == extapi.Shutdown {
 			log.Println(event.ShutdownReason)
 			os.Exit(0)
 		}
 
-		processEventFunc := func(event *lambdaextensions.NextEventResponse) error { return nil }
+		processEventFunc := func(event *extapi.NextEventResponse) error { return nil }
 		if err := processEventFunc(event); err != nil {
 			// 4. report error and exit if event processing failed
 			_, _ = client.ExitError(ctx, "ExtensionName.Reason", nil)
@@ -59,12 +60,12 @@ func ExampleClient() {
 func ExampleRegister() {
 	ctx := context.Background()
 
-	client, err := lambdaextensions.Register(
+	client, err := extapi.Register(
 		ctx,
-		lambdaextensions.WithEventTypes([]lambdaextensions.EventType{lambdaextensions.Shutdown}),
-		lambdaextensions.WithExtensionName("binary_file_basename"),
-		lambdaextensions.WithAWSLambdaRuntimeAPI("127.0.0.1:8080"),
-		lambdaextensions.WithHTTPClient(http.DefaultClient),
+		extapi.WithEventTypes([]extapi.EventType{extapi.Shutdown}),
+		extapi.WithExtensionName("binary_file_basename"),
+		extapi.WithAWSLambdaRuntimeAPI("127.0.0.1:8080"),
+		extapi.WithHTTPClient(http.DefaultClient),
 	)
 	if err != nil {
 		log.Fatalln(err)
@@ -76,7 +77,7 @@ func ExampleRegister() {
 func ExampleClient_ExitError() {
 	ctx := context.Background()
 
-	client, err := lambdaextensions.Register(ctx)
+	client, err := extapi.Register(ctx)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -91,7 +92,7 @@ func ExampleClient_ExitError() {
 	_ = errResp
 
 	trace := strings.Split(string(debug.Stack()), "\n")
-	errorReq := &lambdaextensions.ErrorRequest{
+	errorReq := &extapi.ErrorRequest{
 		ErrorMessage: "text description of the error",
 		ErrorType:    errorType,
 		StackTrace:   trace,
@@ -101,4 +102,33 @@ func ExampleClient_ExitError() {
 		log.Fatalln(err)
 	}
 	_ = errResp
+}
+
+func ExampleClient_LogsSubscribe() {
+	ctx := context.Background()
+
+	// 1. register extension and subscribe only to shutdown events
+	client, err := extapi.Register(ctx, extapi.WithEventTypes([]extapi.EventType{extapi.Shutdown}))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 2. start log receiving server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// process logs
+	}))
+	defer server.Close()
+
+	// 3. subscribe to logs api
+	req := extapi.NewLogsSubscribeRequest(server.URL, nil)
+	if err := client.LogsSubscribe(ctx, req); err != nil {
+		// 4. report error and exit if event processing failed
+		_, _ = client.ExitError(ctx, "ExtensionName.Reason", nil)
+		log.Fatalln(err)
+	}
+
+	// 5. wait for shutdown event
+	for {
+		_, _ = client.NextEvent(ctx)
+	}
 }

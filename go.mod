@@ -1,4 +1,4 @@
-module github.com/zakharovvi/lambdaextensions
+module github.com/zakharovvi/lambda-extensions
 
 go 1.19
 

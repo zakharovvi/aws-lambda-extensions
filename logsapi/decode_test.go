@@ -1,64 +1,24 @@
-package lambdaextensions_test
+package logsapi_test
 
 import (
-	"context"
 	"encoding/json"
 	"io"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zakharovvi/lambdaextensions"
+	"github.com/zakharovvi/lambda-extensions/extapi"
+	"github.com/zakharovvi/lambda-extensions/logsapi"
 )
-
-const (
-	logReceiverURL = "http://example.com:8080/logs"
-)
-
-func TestSubscribe(t *testing.T) {
-	client, server, mux, err := register(t)
-	require.NoError(t, err)
-	defer server.Close()
-	mux.HandleFunc("/2020-08-15/logs", func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
-		assert.Equal(t, http.MethodPut, r.Method)
-		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
-
-		req, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		subscribeReq := &lambdaextensions.SubscribeRequest{}
-		assert.NoError(t, json.Unmarshal(req, subscribeReq))
-		assert.Equal(t, logReceiverURL, subscribeReq.Destination.URI)
-		assert.Equal(
-			t,
-			[]lambdaextensions.LogSubscriptionType{lambdaextensions.Platform, lambdaextensions.Function, lambdaextensions.Extension},
-			subscribeReq.LogTypes,
-		)
-
-		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte("OK")); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	subscribeReq := lambdaextensions.NewSubscribeRequest(logReceiverURL, nil)
-	err = client.Subscribe(context.Background(), subscribeReq)
-	assert.NoError(t, err)
-}
 
 func TestDecodeLogs(t *testing.T) {
 	tests := []struct {
 		name              string
 		response          string
 		wantErrorContains string
-		want              []lambdaextensions.Log
+		want              []logsapi.Log
 	}{
 		{
 			name: "multiple messages",
@@ -75,21 +35,21 @@ func TestDecodeLogs(t *testing.T) {
 				}
 			]`,
 			wantErrorContains: "",
-			want: []lambdaextensions.Log{
+			want: []logsapi.Log{
 				{
-					LogType:   lambdaextensions.LogPlatformStart,
+					LogType:   logsapi.LogPlatformStart,
 					Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 					RawRecord: json.RawMessage(`{"requestId": "6f7f0961f83442118a7af6fe80b88d56"}`),
-					Record: &lambdaextensions.PlatformStartRecord{
+					Record: &logsapi.RecordPlatformStart{
 						RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 						Version:   "",
 					},
 				},
 				{
-					LogType:   lambdaextensions.LogPlatformEnd,
+					LogType:   logsapi.LogPlatformEnd,
 					Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 					RawRecord: json.RawMessage(`{"requestId": "6f7f0961f83442118a7af6fe80b88d56"}`),
-					Record: &lambdaextensions.PlatformEndRecord{
+					Record: &logsapi.RecordPlatformEnd{
 						RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 					},
 				},
@@ -118,12 +78,12 @@ func TestDecodeLogs(t *testing.T) {
 				{ INVALID_JSON
 			]`,
 			wantErrorContains: "invalid character",
-			want: []lambdaextensions.Log{
+			want: []logsapi.Log{
 				{
-					LogType:   lambdaextensions.LogPlatformStart,
+					LogType:   logsapi.LogPlatformStart,
 					Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 					RawRecord: json.RawMessage(`{"requestId": "6f7f0961f83442118a7af6fe80b88d56"}`),
-					Record: &lambdaextensions.PlatformStartRecord{
+					Record: &logsapi.RecordPlatformStart{
 						RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 						Version:   "",
 					},
@@ -134,9 +94,9 @@ func TestDecodeLogs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logsCh := make(chan lambdaextensions.Log, 100)
+			logsCh := make(chan logsapi.Log, 100)
 			r := io.NopCloser(strings.NewReader(tt.response))
-			err := lambdaextensions.DecodeLogs(r, logsCh)
+			err := logsapi.DecodeLogs(r, logsCh)
 			if tt.wantErrorContains == "" {
 				assert.NoError(t, err)
 			} else {
@@ -144,7 +104,7 @@ func TestDecodeLogs(t *testing.T) {
 			}
 			close(logsCh)
 
-			var logs []lambdaextensions.Log
+			var logs []logsapi.Log
 			for log := range logsCh {
 				logs = append(logs, log)
 			}
@@ -159,14 +119,14 @@ func TestDecodeLogs(t *testing.T) {
 }
 
 func TestDecodeLogs_LogTypes(t *testing.T) {
-	platformFaultRecord := lambdaextensions.PlatformFaultRecord("RequestId: d783b35e-a91d-4251-af17-035953428a2c Process exited before completing request")
-	functionRecord := lambdaextensions.FunctionRecord("Hello from function")
-	extensionRecord := lambdaextensions.ExtensionRecord("Hello from extension")
+	platformFaultRecord := logsapi.RecordPlatformFault("RequestId: d783b35e-a91d-4251-af17-035953428a2c Process exited before completing request")
+	functionRecord := logsapi.RecordFunction("Hello from function")
+	extensionRecord := logsapi.RecordExtension("Hello from extension")
 
 	tests := []struct {
 		name     string
 		response string
-		want     lambdaextensions.Log
+		want     logsapi.Log
 	}{
 		{
 			name: "platform.start",
@@ -177,11 +137,11 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 					"record": {"requestId": "6f7f0961f83442118a7af6fe80b88d56"}
 				}
 			]`,
-			want: lambdaextensions.Log{
-				LogType:   lambdaextensions.LogPlatformStart,
+			want: logsapi.Log{
+				LogType:   logsapi.LogPlatformStart,
 				Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`{"requestId": "6f7f0961f83442118a7af6fe80b88d56"}`),
-				Record: &lambdaextensions.PlatformStartRecord{
+				Record: &logsapi.RecordPlatformStart{
 					RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 					Version:   "",
 				},
@@ -196,11 +156,11 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 					"record": {"requestId": "6f7f0961f83442118a7af6fe80b88d56"}
 				}
 			]`,
-			want: lambdaextensions.Log{
-				LogType:   lambdaextensions.LogPlatformEnd,
+			want: logsapi.Log{
+				LogType:   logsapi.LogPlatformEnd,
 				Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`{"requestId": "6f7f0961f83442118a7af6fe80b88d56"}`),
-				Record: &lambdaextensions.PlatformEndRecord{
+				Record: &logsapi.RecordPlatformEnd{
 					RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 				},
 			},
@@ -223,8 +183,8 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 					}
 				}
 			]`,
-			want: lambdaextensions.Log{
-				LogType: lambdaextensions.LogPlatformReport,
+			want: logsapi.Log{
+				LogType: logsapi.LogPlatformReport,
 				Time:    time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`{
 					"requestId": "6f7f0961f83442118a7af6fe80b88d56",
@@ -236,9 +196,9 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 						"initDurationMs": 116.67
 					}
 				}`),
-				Record: &lambdaextensions.PlatformReportRecord{
+				Record: &logsapi.RecordPlatformReport{
 					RequestID: "6f7f0961f83442118a7af6fe80b88d56",
-					Metrics: lambdaextensions.Metrics{
+					Metrics: logsapi.Metrics{
 						DurationMs:       101.51,
 						BilledDurationMs: 300,
 						MemorySizeMB:     512,
@@ -257,8 +217,8 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 					"record": "RequestId: d783b35e-a91d-4251-af17-035953428a2c Process exited before completing request"
 				}
 			]`,
-			want: lambdaextensions.Log{
-				LogType:   lambdaextensions.LogPlatformFault,
+			want: logsapi.Log{
+				LogType:   logsapi.LogPlatformFault,
 				Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`"RequestId: d783b35e-a91d-4251-af17-035953428a2c Process exited before completing request"`),
 				Record:    &platformFaultRecord,
@@ -277,16 +237,16 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 					 }
 				}
 			]`,
-			want: lambdaextensions.Log{
-				LogType: lambdaextensions.LogPlatformExtension,
+			want: logsapi.Log{
+				LogType: logsapi.LogPlatformExtension,
 				Time:    time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`{
 						"name": "Foo.bar",
 						"state": "Ready",
 						"events": ["INVOKE", "SHUTDOWN"]
 				 }`),
-				Record: &lambdaextensions.PlatformExtensionRecord{
-					Events: []lambdaextensions.EventType{lambdaextensions.Invoke, lambdaextensions.Shutdown},
+				Record: &logsapi.RecordPlatformExtension{
+					Events: []extapi.EventType{extapi.Invoke, extapi.Shutdown},
 					Name:   "Foo.bar",
 					State:  "Ready",
 				},
@@ -305,18 +265,18 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 					}
 				}
 			]`,
-			want: lambdaextensions.Log{
-				LogType: lambdaextensions.LogPlatformLogsSubscription,
+			want: logsapi.Log{
+				LogType: logsapi.LogPlatformLogsSubscription,
 				Time:    time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`{
 						"name": "Foo.bar",
 						"state": "Subscribed",
 						"types": ["function", "platform"]
 				}`),
-				Record: &lambdaextensions.PlatformLogsSubscriptionRecord{
+				Record: &logsapi.RecordPlatformLogsSubscription{
 					Name:  "Foo.bar",
 					State: "Subscribed",
-					Types: []lambdaextensions.LogSubscriptionType{lambdaextensions.Function, lambdaextensions.Platform},
+					Types: []extapi.LogSubscriptionType{extapi.Function, extapi.Platform},
 				},
 			},
 		},
@@ -333,15 +293,15 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 					}
 				}
 			]`,
-			want: lambdaextensions.Log{
-				LogType: lambdaextensions.LogPlatformLogsDropped,
+			want: logsapi.Log{
+				LogType: logsapi.LogPlatformLogsDropped,
 				Time:    time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`{
 						"reason": "Consumer seems to have fallen behind as it has not acknowledged receipt of logs.",
 						"droppedRecords": 123,
 						"droppedBytes": 12345
 				}`),
-				Record: &lambdaextensions.PlatformLogsDroppedRecord{
+				Record: &logsapi.RecordPlatformLogsDropped{
 					DroppedBytes:   12345,
 					DroppedRecords: 123,
 					Reason:         "Consumer seems to have fallen behind as it has not acknowledged receipt of logs.",
@@ -360,16 +320,16 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 				  }
 				}
 			]`,
-			want: lambdaextensions.Log{
-				LogType: lambdaextensions.LogPlatformRuntimeDone,
+			want: logsapi.Log{
+				LogType: logsapi.LogPlatformRuntimeDone,
 				Time:    time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`{
 					  "requestId":"6f7f0961f83442118a7af6fe80b88",
 					  "status": "timeout"
 				}`),
-				Record: &lambdaextensions.PlatformRuntimeDoneRecord{
+				Record: &logsapi.RecordPlatformRuntimeDone{
 					RequestID: "6f7f0961f83442118a7af6fe80b88",
-					Status:    lambdaextensions.RuntimeDoneTimeout,
+					Status:    logsapi.RuntimeDoneTimeout,
 				},
 			},
 		},
@@ -382,8 +342,8 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 					"record": "Hello from function"
 				}
 			]`,
-			want: lambdaextensions.Log{
-				LogType:   lambdaextensions.LogFunction,
+			want: logsapi.Log{
+				LogType:   logsapi.LogFunction,
 				Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`"Hello from function"`),
 				Record:    &functionRecord,
@@ -398,8 +358,8 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 					"record": "Hello from extension"
 				}
 			]`,
-			want: lambdaextensions.Log{
-				LogType:   lambdaextensions.LogExtension,
+			want: logsapi.Log{
+				LogType:   logsapi.LogExtension,
 				Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`"Hello from extension"`),
 				Record:    &extensionRecord,
@@ -409,9 +369,9 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logs := make(chan lambdaextensions.Log, 1)
+			logs := make(chan logsapi.Log, 1)
 			r := io.NopCloser(strings.NewReader(tt.response))
-			err := lambdaextensions.DecodeLogs(r, logs)
+			err := logsapi.DecodeLogs(r, logs)
 			require.NoError(t, err)
 
 			log := <-logs
