@@ -138,7 +138,7 @@ type Client struct {
 }
 
 // Register registers the extension with the Lambda Extensions API. This happens
-// during Extension Init. Each call must include the list of events in the body
+// during extension Init. Each call must include the list of events in the body
 // and the extension name in the headers.
 func Register(ctx context.Context, opts ...Option) (*Client, error) {
 	extensionName, _ := os.Executable()

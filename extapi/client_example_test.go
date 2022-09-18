@@ -82,7 +82,7 @@ func ExampleClient_ExitError() {
 		log.Fatalln(err)
 	}
 
-	errorType := "Extension.UnknownReason"
+	errorType := "LogSubscriptionTypeExtension.UnknownReason"
 
 	// ErrorRequest is optional
 	errResp, err := client.ExitError(ctx, errorType, nil)

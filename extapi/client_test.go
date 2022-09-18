@@ -279,7 +279,7 @@ func TestSubscribe(t *testing.T) {
 		assert.Equal(t, logReceiverURL, subscribeReq.Destination.URI)
 		assert.Equal(
 			t,
-			[]extapi.LogSubscriptionType{extapi.Platform, extapi.Function, extapi.Extension},
+			[]extapi.LogSubscriptionType{extapi.LogSubscriptionTypePlatform, extapi.LogSubscriptionTypeFunction, extapi.LogSubscriptionTypeExtension},
 			subscribeReq.LogTypes,
 		)
 

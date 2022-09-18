@@ -12,12 +12,12 @@ import (
 type LogSubscriptionType string
 
 const (
-	// Platform is to receive logs emitted by the platform
-	Platform LogSubscriptionType = "platform"
-	// Function is to receive logs emitted by the function
-	Function LogSubscriptionType = "function"
-	// Extension is to receive logs emitted by the extension
-	Extension LogSubscriptionType = "extension"
+	// LogSubscriptionTypePlatform is to receive logs emitted by the platform
+	LogSubscriptionTypePlatform LogSubscriptionType = "platform"
+	// LogSubscriptionTypeFunction is to receive logs emitted by the function
+	LogSubscriptionTypeFunction LogSubscriptionType = "function"
+	// LogSubscriptionTypeExtension is to receive logs emitted by the extension
+	LogSubscriptionTypeExtension LogSubscriptionType = "extension"
 )
 
 // LogsBufferingCfg is the configuration set for receiving logs from Logs API. Whichever of the conditions below is met first, the logs will be sent
@@ -78,7 +78,7 @@ type LogsSubscribeRequest struct {
 
 func NewLogsSubscribeRequest(url string, logTypes []LogSubscriptionType) *LogsSubscribeRequest {
 	if len(logTypes) == 0 {
-		logTypes = append(logTypes, Platform, Function, Extension)
+		logTypes = append(logTypes, LogSubscriptionTypePlatform, LogSubscriptionTypeFunction, LogSubscriptionTypeExtension)
 	}
 	return &LogsSubscribeRequest{
 		LogTypes: logTypes,

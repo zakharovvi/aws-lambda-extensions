@@ -276,7 +276,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 				Record: &logsapi.RecordPlatformLogsSubscription{
 					Name:  "Foo.bar",
 					State: "Subscribed",
-					Types: []extapi.LogSubscriptionType{extapi.Function, extapi.Platform},
+					Types: []extapi.LogSubscriptionType{extapi.LogSubscriptionTypeFunction, extapi.LogSubscriptionTypePlatform},
 				},
 			},
 		},
