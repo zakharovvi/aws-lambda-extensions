@@ -61,9 +61,9 @@ func TestRegister(t *testing.T) {
 	require.NoError(t, err)
 	defer server.Close()
 
-	assert.Equal(t, "helloWorld", client.RegisterResp.FunctionName)
-	assert.Equal(t, "$LATEST", client.RegisterResp.FunctionVersion)
-	assert.Equal(t, "lambda_function.lambda_handler", client.RegisterResp.Handler)
+	assert.Equal(t, "helloWorld", client.FunctionName())
+	assert.Equal(t, "$LATEST", client.FunctionVersion())
+	assert.Equal(t, "lambda_function.lambda_handler", client.Handler())
 }
 
 func TestNextEvent_Invoke(t *testing.T) {

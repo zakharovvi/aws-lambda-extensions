@@ -21,9 +21,9 @@ func ExampleClient() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println(client.RegisterResp.FunctionName)
-	log.Println(client.RegisterResp.FunctionVersion)
-	log.Println(client.RegisterResp.Handler)
+	log.Println(client.FunctionName())
+	log.Println(client.FunctionVersion())
+	log.Println(client.Handler())
 
 	// 2. initialize the extension
 	initFunc := func() error { return nil }

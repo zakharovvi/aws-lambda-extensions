@@ -134,7 +134,19 @@ type Client struct {
 	runtimeAPI   string
 	httpClient   *http.Client
 	extensionID  string
-	RegisterResp *RegisterResponse
+	registerResp *RegisterResponse
+}
+
+func (c *Client) FunctionName() string {
+	return c.registerResp.FunctionName
+}
+
+func (c *Client) FunctionVersion() string {
+	return c.registerResp.FunctionVersion
+}
+
+func (c *Client) Handler() string {
+	return c.registerResp.Handler
 }
 
 // Register registers the extension with the Lambda Extensions API. This happens
@@ -161,7 +173,7 @@ func Register(ctx context.Context, opts ...Option) (*Client, error) {
 		httpClient: options.httpClient,
 	}
 	var err error
-	client.RegisterResp, err = client.register(ctx, options.extensionName, options.eventTypes)
+	client.registerResp, err = client.register(ctx, options.extensionName, options.eventTypes)
 	if err != nil {
 		return nil, fmt.Errorf("could not register extension: %w", err)
 	}
