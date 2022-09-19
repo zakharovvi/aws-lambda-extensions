@@ -65,6 +65,7 @@ func TestRegister(t *testing.T) {
 	assert.Equal(t, "helloWorld", client.FunctionName())
 	assert.Equal(t, "$LATEST", client.FunctionVersion())
 	assert.Equal(t, "lambda_function.lambda_handler", client.Handler())
+	assert.Equal(t, testIdentifier, client.ExtensionID())
 }
 
 func TestNextEvent_Invoke(t *testing.T) {

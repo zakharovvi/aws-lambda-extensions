@@ -165,6 +165,10 @@ func (c *Client) Handler() string {
 	return c.registerResp.Handler
 }
 
+func (c *Client) ExtensionID() string {
+	return c.extensionID
+}
+
 // Register registers the extension with the Lambda Extensions API. This happens
 // during extension Init. Each call must include the list of events in the body
 // and the extension name in the headers.
