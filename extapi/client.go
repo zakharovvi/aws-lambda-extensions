@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/go-logr/logr"
 )
 
 // EventType represents the type of events received from /event/next
@@ -86,6 +88,7 @@ type options struct {
 	awsLambdaRuntimeAPI string
 	eventTypes          []EventType
 	httpClient          *http.Client
+	log                 logr.Logger
 }
 type Option interface {
 	apply(*options)
@@ -129,11 +132,23 @@ func WithHTTPClient(httpClient *http.Client) Option {
 	return httpClientOption{httpClient}
 }
 
+type loggerOption struct {
+	log logr.Logger
+}
+
+func (o loggerOption) apply(opts *options) {
+	opts.log = o.log
+}
+func WithLogger(log logr.Logger) Option {
+	return loggerOption{log}
+}
+
 type Client struct {
 	runtimeAPI   string
 	httpClient   *http.Client
 	extensionID  string
 	registerResp *RegisterResponse
+	log          logr.Logger
 }
 
 func (c *Client) FunctionName() string {
@@ -159,24 +174,32 @@ func Register(ctx context.Context, opts ...Option) (*Client, error) {
 		awsLambdaRuntimeAPI: os.Getenv("AWS_LAMBDA_RUNTIME_API"),
 		eventTypes:          []EventType{Invoke, Shutdown},
 		httpClient:          http.DefaultClient,
+		log:                 logr.FromContextOrDiscard(ctx),
 	}
 	for _, o := range opts {
 		o.apply(&options)
 	}
 	if options.awsLambdaRuntimeAPI == "" {
-		return nil, errors.New("could not find environment variable AWS_LAMBDA_RUNTIME_API")
+		err := errors.New("could not find environment variable AWS_LAMBDA_RUNTIME_API")
+		options.log.Error(err, "")
+		return nil, err
 	}
+	options.log.V(1).Info("using AWS_LAMBDA_RUNTIME_API", "addr", options.awsLambdaRuntimeAPI)
 
 	client := &Client{
 		runtimeAPI: options.awsLambdaRuntimeAPI,
 		httpClient: options.httpClient,
+		log:        options.log,
 	}
 	var err error
 	client.registerResp, err = client.register(ctx, options.extensionName, options.eventTypes)
 	if err != nil {
-		return nil, fmt.Errorf("could not register extension: %w", err)
+		err = fmt.Errorf("could not register extension: %w", err)
+		options.log.Error(err, "")
+		return nil, err
 	}
 
+	client.log.V(1).Info("extension registered", "extensionID", client.extensionID)
 	return client, nil
 }
 
@@ -184,13 +207,14 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 	registerReq := RegisterRequest{eventTypes}
 	body, err := json.Marshal(&registerReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not json encode register request: %w", err)
 	}
+	c.log.V(1).Info("sending register request", "body", body)
 
 	url := fmt.Sprintf("http://%s/2020-01-01/extension/register", c.runtimeAPI)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not create register http request: %w", err)
 	}
 	req.Header.Set(nameHeader, extensionName)
 	req.Header.Set("Content-Type", "application/json")
@@ -198,7 +222,7 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 	registerResp := &RegisterResponse{}
 	resp, err := c.doRequest(req, http.StatusOK, registerResp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("register http call failed: %w", err)
 	}
 
 	c.extensionID = resp.Header.Get(idHeader)
@@ -206,6 +230,7 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 		return nil, fmt.Errorf("could not find extension ID in register response header %s", idHeader)
 	}
 
+	c.log.V(1).Info("received register response", "response", registerResp)
 	return registerResp, nil
 }
 
@@ -213,17 +238,23 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 // By default, the Go HTTP client has no timeout, and in this case this is actually
 // the desired behavior to enable long polling of the Extensions API.
 func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
+	c.log.V(1).Info("requesting event/next")
 	url := fmt.Sprintf("http://%s/2020-01-01/extension/event/next", c.runtimeAPI)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
+		err = fmt.Errorf("could not create http request for event/next: %w", err)
+		c.log.Error(err, "")
 		return nil, err
 	}
 	req.Header.Set(idHeader, c.extensionID)
 
 	nextResp := &NextEventResponse{}
 	if _, err := c.doRequest(req, http.StatusOK, nextResp); err != nil {
+		err = fmt.Errorf("event/next call failed: %w", err)
+		c.log.Error(err, "")
 		return nil, err
 	}
+	c.log.V(1).Info("event/next response received")
 	return nextResp, nil
 }
 
@@ -238,9 +269,12 @@ func (c *Client) ExitError(ctx context.Context, errorType string, err error) (*E
 }
 
 func (c *Client) reportError(ctx context.Context, action, errorType string, err error) (*ErrorResponse, error) {
+	c.log.V(1).Info("reporting error", "action", action, "errorType", errorType, "body", err.Error())
 	url := fmt.Sprintf("http://%s/2020-01-01/extension%s", c.runtimeAPI, action)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(err.Error()))
 	if err != nil {
+		err = fmt.Errorf("could not create http request for error reporting %s: %w", action, err)
+		c.log.Error(err, "")
 		return nil, err
 	}
 	req.Header.Set(idHeader, c.extensionID)
@@ -249,28 +283,35 @@ func (c *Client) reportError(ctx context.Context, action, errorType string, err 
 
 	errorResp := &ErrorResponse{}
 	if _, err := c.doRequest(req, http.StatusAccepted, errorResp); err != nil {
+		err = fmt.Errorf("error reporting %s call failed: %w", action, err)
+		c.log.Error(err, "")
 		return nil, err
 	}
+	c.log.V(1).Info("error has been reported", "action", action, "response", errorResp)
 	return errorResp, nil
 }
 
 func (c *Client) doRequest(req *http.Request, wantStatus int, out interface{}) (*http.Response, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("http request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.log.Error(err, "could not close http response body")
+		}
+	}()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not read http response body: %w", err)
 	}
 	if resp.StatusCode != wantStatus {
-		return nil, fmt.Errorf("request failed with status %s and body: %s", resp.Status, body)
+		return nil, fmt.Errorf("http request failed with status %s and body: %s", resp.Status, body)
 	}
 
 	if out != nil {
 		if err := json.Unmarshal(body, out); err != nil {
-			return nil, fmt.Errorf("could not unmarshal response %s: %w", body, err)
+			return nil, fmt.Errorf("could not json decode http response %s: %w", body, err)
 		}
 	}
 	return resp, nil

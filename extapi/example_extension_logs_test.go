@@ -34,7 +34,7 @@ func (e *LogsExtension) Init(ctx context.Context, client *extapi.Client) error {
 	return client.LogsSubscribe(ctx, req)
 }
 
-func (e *LogsExtension) Invoke(ctx context.Context, event *extapi.NextEventResponse) error {
+func (e *LogsExtension) HandleInvokeEvent(ctx context.Context, event *extapi.NextEventResponse) error {
 	panic("for log subscriber extension example we don't subscribe to 'invoke' events. 'shutdown' event will be handled by run")
 }
 

@@ -16,7 +16,7 @@ func (s *InvokeExtension) Init(ctx context.Context, client *extapi.Client) error
 	return nil
 }
 
-func (s *InvokeExtension) Invoke(ctx context.Context, event *extapi.NextEventResponse) error {
+func (s *InvokeExtension) HandleInvokeEvent(ctx context.Context, event *extapi.NextEventResponse) error {
 	b, err := json.Marshal(event)
 	if err != nil {
 		return err

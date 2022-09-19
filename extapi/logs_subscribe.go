@@ -92,17 +92,23 @@ func NewLogsSubscribeRequest(url string, logTypes []LogSubscriptionType) *LogsSu
 func (c *Client) LogsSubscribe(ctx context.Context, subscribeReq *LogsSubscribeRequest) error {
 	body, err := json.Marshal(subscribeReq)
 	if err != nil {
+		err = fmt.Errorf("could not json encode logs subscribe request: %w", err)
+		c.log.Error(err, "")
 		return err
 	}
 	url := fmt.Sprintf("http://%s/2020-08-15/logs", c.runtimeAPI)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(body))
 	if err != nil {
+		err = fmt.Errorf("could not logs subscribe http request: %w", err)
+		c.log.Error(err, "")
 		return err
 	}
 	req.Header.Set(idHeader, c.extensionID)
 	req.Header.Set("Content-Type", "application/json")
 
 	if _, err := c.doRequest(req, http.StatusOK, nil); err != nil {
+		err = fmt.Errorf("logs subscribe http call failed: %w", err)
+		c.log.Error(err, "")
 		return err
 	}
 
