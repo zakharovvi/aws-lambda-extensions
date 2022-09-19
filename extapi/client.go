@@ -177,7 +177,7 @@ func Register(ctx context.Context, opts ...Option) (*Client, error) {
 	extensionName = filepath.Base(extensionName)
 	options := options{
 		extensionName:       extensionName,
-		awsLambdaRuntimeAPI: os.Getenv("AWS_LAMBDA_RUNTIME_API"),
+		awsLambdaRuntimeAPI: EnvAWSLambdaRuntimeAPI(),
 		eventTypes:          []EventType{Invoke, Shutdown},
 		httpClient:          http.DefaultClient,
 		log:                 logr.FromContextOrDiscard(ctx),
