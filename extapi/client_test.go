@@ -20,7 +20,7 @@ var (
 	testIdentifier  = "test-identifier"
 	testErrorType   = "extension.TestReason"
 	testErrorStatus = "OK"
-	testErr         = errors.New("text description of the error")
+	errTest         = errors.New("text description of the error")
 
 	respRegister = []byte(`
 		{
@@ -136,7 +136,7 @@ func TestInitError(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.Equal(t, testErr.Error(), string(req))
+		assert.Equal(t, errTest.Error(), string(req))
 
 		w.WriteHeader(http.StatusAccepted)
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
@@ -153,7 +153,7 @@ func TestInitError(t *testing.T) {
 		{
 			name:      "with request",
 			errorType: testErrorType,
-			err:       testErr,
+			err:       errTest,
 		},
 	}
 
@@ -181,7 +181,7 @@ func TestExitError(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.Equal(t, testErr.Error(), string(req))
+		assert.Equal(t, errTest.Error(), string(req))
 
 		w.WriteHeader(http.StatusAccepted)
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
@@ -198,7 +198,7 @@ func TestExitError(t *testing.T) {
 		{
 			name:      "with request",
 			errorType: testErrorType,
-			err:       testErr,
+			err:       errTest,
 		},
 	}
 
@@ -212,6 +212,7 @@ func TestExitError(t *testing.T) {
 }
 
 func register(t *testing.T) (*extapi.Client, *httptest.Server, *http.ServeMux, error) {
+	t.Helper()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/2020-01-01/extension/register", func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -232,10 +233,9 @@ func register(t *testing.T) (*extapi.Client, *httptest.Server, *http.ServeMux, e
 	})
 	server := httptest.NewServer(mux)
 
-	if err := os.Setenv("AWS_LAMBDA_RUNTIME_API", server.Listener.Addr().String()); err != nil {
-		t.Fatal(err)
-	}
+	t.Setenv("AWS_LAMBDA_RUNTIME_API", server.Listener.Addr().String())
 	client, err := extapi.Register(context.Background())
+
 	return client, server, mux, err
 }
 

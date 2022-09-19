@@ -10,15 +10,15 @@ import (
 	"github.com/zakharovvi/lambda-extensions/extapi"
 )
 
-// End to end example how to use Client, process events and handle errors
-// Please consider using Run function which is a high-level wrapper over Client
+// End to end example how to use Client, process events and handle errors.
+// Please consider using Run function which is a high-level wrapper over Client.
 func ExampleClient() {
 	ctx := context.Background()
 
 	// 1. register extension
 	client, err := extapi.Register(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	log.Println(client.FunctionName())
 	log.Println(client.FunctionVersion())
@@ -29,7 +29,7 @@ func ExampleClient() {
 	if err := initFunc(); err != nil {
 		// report error and exit if initialization failed
 		_, _ = client.InitError(ctx, "ExtensionName.Reason", err)
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	// 3. start polling events
@@ -39,7 +39,7 @@ func ExampleClient() {
 		if err != nil {
 			// report error and exit if event processing failed
 			_, _ = client.ExitError(ctx, "ExtensionName.Reason", err)
-			log.Fatal(err)
+			log.Panic(err)
 		}
 		if event.EventType == extapi.Shutdown {
 			log.Println(event.ShutdownReason)
@@ -50,12 +50,12 @@ func ExampleClient() {
 		if err := processEventFunc(event); err != nil {
 			// 4. report error and exit if event processing failed
 			_, _ = client.ExitError(ctx, "ExtensionName.Reason", err)
-			log.Fatal(err)
+			log.Panic(err)
 		}
 	}
 }
 
-// Register supports optional arguments to override defaults
+// Register supports optional arguments to override defaults.
 func ExampleRegister() {
 	ctx := context.Background()
 
@@ -67,18 +67,18 @@ func ExampleRegister() {
 		extapi.WithHTTPClient(http.DefaultClient),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	_ = client
 }
 
-// Client.ExitError and Client.InitError accept error details to send to lambda
+// Client.ExitError and Client.InitError accept error details to send to lambda.
 func ExampleClient_ExitError() {
 	ctx := context.Background()
 
 	client, err := extapi.Register(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	errResp, err := client.ExitError(ctx, "ExtensionName.Reason", errors.New("text description of the error"))
@@ -96,7 +96,7 @@ func ExampleClient_LogsSubscribe() {
 	// 1. register extension and subscribe only to shutdown events
 	client, err := extapi.Register(ctx, extapi.WithEventTypes([]extapi.EventType{extapi.Shutdown}))
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	// 2. start log receiving server
@@ -106,14 +106,18 @@ func ExampleClient_LogsSubscribe() {
 			// process logs
 		}),
 	}
-	defer srv.Shutdown(ctx)
+	defer func() {
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	// 3. subscribe to logs api
 	req := extapi.NewLogsSubscribeRequest(srv.Addr, nil)
 	if err := client.LogsSubscribe(ctx, req); err != nil {
 		// 4. report error and exit if event processing failed
 		_, _ = client.InitError(ctx, "ExtensionName.Reason", err)
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	// 5. block till shutdown event

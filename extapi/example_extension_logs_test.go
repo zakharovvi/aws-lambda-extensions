@@ -31,6 +31,7 @@ func (e *LogsExtension) Init(ctx context.Context, client *extapi.Client) error {
 
 	// 3. subscribe to lambda logs
 	req := extapi.NewLogsSubscribeRequest(e.srv.Addr, nil)
+
 	return client.LogsSubscribe(ctx, req)
 }
 
@@ -42,6 +43,7 @@ func (e *LogsExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReas
 	// gracefully shut down logs receiver http server
 	err := e.srv.Shutdown(ctx)
 	close(e.logsCh)
+
 	return err
 }
 
@@ -54,6 +56,7 @@ func Example_logsSubscribe() {
 			if err := logsapi.DecodeLogs(r.Body, logsCh); err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				log.Println(err)
+
 				return
 			}
 			w.WriteHeader(http.StatusOK)
@@ -67,6 +70,6 @@ func Example_logsSubscribe() {
 		ext,
 		extapi.WithEventTypes([]extapi.EventType{extapi.Shutdown}), // subscribe only to shutdown events
 	); err != nil {
-		log.Fatalln(err)
+		log.Panicln(err)
 	}
 }

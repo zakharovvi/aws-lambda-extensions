@@ -89,7 +89,7 @@ type RecordFunction string
 
 type RecordExtension string
 
-// DecodeLogs consumes all logs from json array stream and close it afterwards
+// DecodeLogs consumes all logs from json array stream and close it afterwards.
 func DecodeLogs(r io.ReadCloser, logs chan<- Log) error {
 	defer func() {
 		_, _ = io.Copy(io.Discard, r)
@@ -137,6 +137,7 @@ func DecodeLogs(r io.ReadCloser, logs chan<- Log) error {
 	if err := readBracket(d, "]"); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -152,5 +153,6 @@ func readBracket(d *json.Decoder, want string) error {
 	if delim.String() != want {
 		return fmt.Errorf("malformed json array, want %s, got %v", want, delim.String())
 	}
+
 	return nil
 }

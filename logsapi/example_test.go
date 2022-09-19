@@ -33,9 +33,10 @@ func ExampleDecodeLogs() {
 		if err := logsapi.DecodeLogs(r.Body, logsCh); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			log.Println(err)
+
 			return
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	log.Fatal(http.ListenAndServe("", nil))
+	log.Panic(http.ListenAndServe("", nil))
 }

@@ -9,7 +9,7 @@ import "os"
 // https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime
 // https://docs.aws.amazon.com/lambda/latest/dg/runtimes-extensions-api.html#runtimes-extensions-registration-api-e
 
-// EnvXAmznTraceID returns X-Ray tracing header
+// EnvXAmznTraceID returns X-Ray tracing header.
 func EnvXAmznTraceID() string {
 	return os.Getenv("_X_AMZN_TRACE_ID")
 }

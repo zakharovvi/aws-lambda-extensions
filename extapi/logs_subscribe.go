@@ -8,19 +8,19 @@ import (
 	"net/http"
 )
 
-// LogSubscriptionType represents the type of logs in Lambda
+// LogSubscriptionType represents the type of logs in Lambda.
 type LogSubscriptionType string
 
 const (
-	// LogSubscriptionTypePlatform is to receive logs emitted by the platform
+	// LogSubscriptionTypePlatform is to receive logs emitted by the platform.
 	LogSubscriptionTypePlatform LogSubscriptionType = "platform"
-	// LogSubscriptionTypeFunction is to receive logs emitted by the function
+	// LogSubscriptionTypeFunction is to receive logs emitted by the function.
 	LogSubscriptionTypeFunction LogSubscriptionType = "function"
-	// LogSubscriptionTypeExtension is to receive logs emitted by the extension
+	// LogSubscriptionTypeExtension is to receive logs emitted by the extension.
 	LogSubscriptionTypeExtension LogSubscriptionType = "extension"
 )
 
-// LogsBufferingCfg is the configuration set for receiving logs from Logs API. Whichever of the conditions below is met first, the logs will be sent
+// LogsBufferingCfg is the configuration set for receiving logs from Logs API. Whichever of the conditions below is met first, the logs will be sent.
 type LogsBufferingCfg struct {
 	// MaxItems is the maximum number of events to be buffered in memory. (default: 10000, minimum: 1000, maximum: 10000)
 	MaxItems uint32 `json:"maxItems"`
@@ -30,36 +30,36 @@ type LogsBufferingCfg struct {
 	TimeoutMS uint32 `json:"timeoutMs"`
 }
 
-// LogsHTTPMethod represents the HTTP method used to receive logs from Logs API
+// LogsHTTPMethod represents the HTTP method used to receive logs from Logs API.
 type LogsHTTPMethod string
 
 const (
-	//HttpPost is to receive logs through POST.
-	HttpPost LogsHTTPMethod = "POST"
-	// HttpPut is to receive logs through PUT.
-	HttpPut LogsHTTPMethod = "PUT"
+	// HTTPPost is to receive logs through POST.
+	HTTPPost LogsHTTPMethod = "POST"
+	// HTTPPut is to receive logs through PUT.
+	HTTPPut LogsHTTPMethod = "PUT"
 )
 
-// LogsHttpProtocol is used to specify the protocol when subscribing to Logs API for HTTP
-type LogsHttpProtocol string
+// LogsHTTPProtocol is used to specify the protocol when subscribing to Logs API for HTTP.
+type LogsHTTPProtocol string
 
 const (
-	HttpProto LogsHttpProtocol = "HTTP"
+	HTTPProto LogsHTTPProtocol = "HTTP"
 )
 
-// LogsHttpEncoding denotes what the content is encoded in
-type LogsHttpEncoding string
+// LogsHTTPEncoding denotes what the content is encoded in.
+type LogsHTTPEncoding string
 
 const (
-	JSON LogsHttpEncoding = "JSON"
+	JSON LogsHTTPEncoding = "JSON"
 )
 
-// LogsDestination is the configuration for listeners who would like to receive logs with HTTP
+// LogsDestination is the configuration for listeners who would like to receive logs with HTTP.
 type LogsDestination struct {
-	Protocol   LogsHttpProtocol `json:"protocol"`
+	Protocol   LogsHTTPProtocol `json:"protocol"`
 	URI        string           `json:"URI"`
-	HttpMethod LogsHTTPMethod   `json:"method,omitempty"`
-	Encoding   LogsHttpEncoding `json:"encoding,omitempty"`
+	HTTPMethod LogsHTTPMethod   `json:"method,omitempty"`
+	Encoding   LogsHTTPEncoding `json:"encoding,omitempty"`
 }
 
 type LogsSchemaVersion string
@@ -68,7 +68,7 @@ const (
 	LogsSchemaVersion20210318 LogsSchemaVersion = "2021-03-18"
 )
 
-// LogsSubscribeRequest is the request body that is sent to Logs API on subscribe
+// LogsSubscribeRequest is the request body that is sent to Logs API on subscribe.
 type LogsSubscribeRequest struct {
 	SchemaVersion LogsSchemaVersion     `json:"schemaVersion,omitempty"`
 	LogTypes      []LogSubscriptionType `json:"types"`
@@ -80,10 +80,11 @@ func NewLogsSubscribeRequest(url string, logTypes []LogSubscriptionType) *LogsSu
 	if len(logTypes) == 0 {
 		logTypes = append(logTypes, LogSubscriptionTypePlatform, LogSubscriptionTypeFunction, LogSubscriptionTypeExtension)
 	}
+
 	return &LogsSubscribeRequest{
 		LogTypes: logTypes,
 		Destination: &LogsDestination{
-			Protocol: HttpProto,
+			Protocol: HTTPProto,
 			URI:      url,
 		},
 	}
@@ -94,6 +95,7 @@ func (c *Client) LogsSubscribe(ctx context.Context, subscribeReq *LogsSubscribeR
 	if err != nil {
 		err = fmt.Errorf("could not json encode logs subscribe request: %w", err)
 		c.log.Error(err, "")
+
 		return err
 	}
 	url := fmt.Sprintf("http://%s/2020-08-15/logs", c.runtimeAPI)
@@ -101,6 +103,7 @@ func (c *Client) LogsSubscribe(ctx context.Context, subscribeReq *LogsSubscribeR
 	if err != nil {
 		err = fmt.Errorf("could not logs subscribe http request: %w", err)
 		c.log.Error(err, "")
+
 		return err
 	}
 	req.Header.Set(idHeader, c.extensionID)
@@ -109,6 +112,7 @@ func (c *Client) LogsSubscribe(ctx context.Context, subscribeReq *LogsSubscribeR
 	if _, err := c.doRequest(req, http.StatusOK, nil); err != nil {
 		err = fmt.Errorf("logs subscribe http call failed: %w", err)
 		c.log.Error(err, "")
+
 		return err
 	}
 

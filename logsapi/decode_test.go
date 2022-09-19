@@ -14,6 +14,8 @@ import (
 )
 
 func TestDecodeLogs(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name              string
 		response          string
@@ -93,7 +95,9 @@ func TestDecodeLogs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			logsCh := make(chan logsapi.Log, 100)
 			r := io.NopCloser(strings.NewReader(tt.response))
 			err := logsapi.DecodeLogs(r, logsCh)
@@ -119,6 +123,8 @@ func TestDecodeLogs(t *testing.T) {
 }
 
 func TestDecodeLogs_LogTypes(t *testing.T) {
+	t.Parallel()
+
 	platformFaultRecord := logsapi.RecordPlatformFault("RequestId: d783b35e-a91d-4251-af17-035953428a2c Process exited before completing request")
 	functionRecord := logsapi.RecordFunction("Hello from function")
 	extensionRecord := logsapi.RecordExtension("Hello from extension")
@@ -368,7 +374,9 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			logs := make(chan logsapi.Log, 1)
 			r := io.NopCloser(strings.NewReader(tt.response))
 			err := logsapi.DecodeLogs(r, logs)

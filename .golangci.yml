@@ -1,0 +1,36 @@
+linters:
+  enable-all: true
+  disable:
+    - exhaustivestruct
+    - wsl
+    - ireturn
+    - goerr113
+    - lll
+    - dupl
+    - funlen
+    - cyclop
+    - tagliatelle
+    - exhaustruct
+    - scopelint
+    - paralleltest
+    - varnamelen
+    - bodyclose
+    - nosnakecase
+    - interfacer
+    - varcheck
+    - deadcode
+    - structcheck
+    - golint
+    - ifshort
+    - maligned
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - wastedassign
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gochecknoglobals
+        - gosec
+        - wrapcheck

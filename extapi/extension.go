@@ -2,6 +2,7 @@ package extapi
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -28,7 +29,8 @@ func Run(ctx context.Context, ext Extension, opts ...Option) error {
 		if err := ext.Shutdown(ctx, ExtensionError); err != nil {
 			log.Error(err, "Extension.Shutdown failed")
 		}
-		return err
+
+		return fmt.Errorf("Extension.Init failed: %w", err)
 	}
 	log.V(1).Info("Extension.Init completed. Starting Client.NextEvent loop")
 	shutdownReason := ExtensionError
@@ -38,6 +40,7 @@ loop:
 		case <-ctx.Done():
 			err = ctx.Err()
 			log.Error(err, "context cancelled before calling Client.NextEvent")
+
 			break loop
 		default:
 		}
@@ -47,6 +50,7 @@ loop:
 		event, err = client.NextEvent(ctx)
 		if err != nil {
 			log.Error(err, "Client.NextEvent failed")
+
 			break loop
 		}
 
@@ -54,6 +58,7 @@ loop:
 		case <-ctx.Done():
 			err = ctx.Err()
 			log.Error(err, "context cancelled after receiving Client.NextEvent result")
+
 			break loop
 		default:
 		}
@@ -64,6 +69,7 @@ loop:
 			ctx, cancel = context.WithDeadline(ctx, time.UnixMilli(event.DeadlineMs))
 			defer cancel()
 			log.Info("shutdown event received", "event", event)
+
 			break loop
 		}
 
@@ -73,6 +79,7 @@ loop:
 		cancel()
 		if err != nil {
 			log.Error(err, "Extension.HandleInvokeEvent failed")
+
 			break loop
 		}
 	}
@@ -83,10 +90,12 @@ loop:
 		if _, err := client.ExitError(ctx, "Extension.HandleInvokeEvent", err); err != nil {
 			log.Error(err, "Client.ExitError error failed")
 		}
+		err = fmt.Errorf("extension loop failed: %w", err)
 	}
 	log.V(1).Info("calling Extension.Shutdown")
 	if err := ext.Shutdown(ctx, shutdownReason); err != nil {
 		log.Error(err, "Extension.Shutdown failed")
 	}
+
 	return err
 }
