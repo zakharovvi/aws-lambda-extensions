@@ -15,21 +15,17 @@ import (
 // EventType represents the type of events received from /event/next
 type EventType string
 
-// ShutdownReason represents the reason for a shutdown event
-type ShutdownReason string
-
 const (
 	// Invoke is the lambda invoke event
 	Invoke EventType = "INVOKE"
 	// Shutdown is a shutdown event for the environment
 	Shutdown EventType = "SHUTDOWN"
+)
 
-	// nameHeader identifies the extension when registering
-	nameHeader = "Lambda-Extension-Name"
-	// idHeader is a uuid that is required on subsequent requests
-	idHeader        = "Lambda-Extension-Identifier"
-	errorTypeHeader = "Lambda-Extension-Function-Error-Type"
+// ShutdownReason represents the reason for a shutdown event
+type ShutdownReason string
 
+const (
 	// Spindown is a normal end to a function
 	Spindown ShutdownReason = "spindown"
 	// Timeout means the handler ran out of time
@@ -81,6 +77,14 @@ type ErrorRequest struct {
 type ErrorResponse struct {
 	Status string `json:"status"`
 }
+
+const (
+	// nameHeader identifies the extension when registering
+	nameHeader = "Lambda-Extension-Name"
+	// idHeader is a uuid that is required on subsequent requests
+	idHeader        = "Lambda-Extension-Identifier"
+	errorTypeHeader = "Lambda-Extension-Function-Error-Type"
+)
 
 type options struct {
 	extensionName       string
