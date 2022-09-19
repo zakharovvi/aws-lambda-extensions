@@ -32,7 +32,8 @@ func ExampleDecodeLogs() {
 	http.HandleFunc("/logs-receiver", func(w http.ResponseWriter, r *http.Request) {
 		if err := logsapi.DecodeLogs(r.Body, logsCh); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			log.Fatal(err)
+			log.Println(err)
+			return
 		}
 		w.WriteHeader(http.StatusOK)
 	})

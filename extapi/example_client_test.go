@@ -5,20 +5,20 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"net/http/httptest"
 	"os"
 
 	"github.com/zakharovvi/lambda-extensions/extapi"
 )
 
 // End to end example how to use Client, process events and handle errors
+// Please consider using Run function which is a high-level wrapper over Client
 func ExampleClient() {
 	ctx := context.Background()
 
 	// 1. register extension
 	client, err := extapi.Register(ctx)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	log.Println(client.FunctionName())
 	log.Println(client.FunctionVersion())
@@ -29,7 +29,7 @@ func ExampleClient() {
 	if err := initFunc(); err != nil {
 		// report error and exit if initialization failed
 		_, _ = client.InitError(ctx, "ExtensionName.Reason", err)
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	// 3. start polling events
@@ -39,7 +39,7 @@ func ExampleClient() {
 		if err != nil {
 			// report error and exit if event processing failed
 			_, _ = client.ExitError(ctx, "ExtensionName.Reason", err)
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		if event.EventType == extapi.Shutdown {
 			log.Println(event.ShutdownReason)
@@ -50,7 +50,7 @@ func ExampleClient() {
 		if err := processEventFunc(event); err != nil {
 			// 4. report error and exit if event processing failed
 			_, _ = client.ExitError(ctx, "ExtensionName.Reason", err)
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 	}
 }
@@ -67,7 +67,7 @@ func ExampleRegister() {
 		extapi.WithHTTPClient(http.DefaultClient),
 	)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	_ = client
 }
@@ -78,7 +78,7 @@ func ExampleClient_ExitError() {
 
 	client, err := extapi.Register(ctx)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	errResp, err := client.ExitError(ctx, "ExtensionName.Reason", errors.New("text description of the error"))
@@ -96,25 +96,26 @@ func ExampleClient_LogsSubscribe() {
 	// 1. register extension and subscribe only to shutdown events
 	client, err := extapi.Register(ctx, extapi.WithEventTypes([]extapi.EventType{extapi.Shutdown}))
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	// 2. start log receiving server
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// process logs
-	}))
-	defer server.Close()
+	srv := http.Server{
+		Addr: ":0",
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// process logs
+		}),
+	}
+	defer srv.Shutdown(ctx)
 
 	// 3. subscribe to logs api
-	req := extapi.NewLogsSubscribeRequest(server.URL, nil)
+	req := extapi.NewLogsSubscribeRequest(srv.Addr, nil)
 	if err := client.LogsSubscribe(ctx, req); err != nil {
 		// 4. report error and exit if event processing failed
-		_, _ = client.ExitError(ctx, "ExtensionName.Reason", err)
-		log.Fatalln(err)
+		_, _ = client.InitError(ctx, "ExtensionName.Reason", err)
+		log.Fatal(err)
 	}
 
-	// 5. wait for shutdown event
-	for {
-		_, _ = client.NextEvent(ctx)
-	}
+	// 5. block till shutdown event
+	_, _ = client.NextEvent(ctx)
 }
