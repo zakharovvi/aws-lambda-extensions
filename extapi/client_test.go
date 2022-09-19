@@ -3,6 +3,7 @@ package extapi_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,10 +17,10 @@ import (
 )
 
 var (
-	testIdentifier   = "test-identifier"
-	testErrorType    = "extension.TestReason"
-	testErrorMessage = "text description of the error"
-	testErrorStatus  = "OK"
+	testIdentifier  = "test-identifier"
+	testErrorType   = "extension.TestReason"
+	testErrorStatus = "OK"
+	testErr         = errors.New("text description of the error")
 
 	respRegister = []byte(`
 		{
@@ -134,10 +135,7 @@ func TestInitError(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		// body can be empty
-		if len(req) != 0 {
-			assert.JSONEq(t, `{"errorMessage": "text description of the error", "errorType": "extension.TestReason", "stackTrace": null}`, string(req))
-		}
+		assert.Equal(t, testErr.Error(), string(req))
 
 		w.WriteHeader(http.StatusAccepted)
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
@@ -147,26 +145,20 @@ func TestInitError(t *testing.T) {
 	})
 
 	tests := []struct {
-		name     string
-		errorReq *extapi.ErrorRequest
+		name      string
+		errorType string
+		err       error
 	}{
 		{
-			name:     "nil request",
-			errorReq: nil,
-		},
-		{
-			name: "with request",
-			errorReq: &extapi.ErrorRequest{
-				ErrorMessage: testErrorMessage,
-				ErrorType:    testErrorType,
-				StackTrace:   nil,
-			},
+			name:      "with request",
+			errorType: testErrorType,
+			err:       testErr,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			status, err := client.InitError(context.Background(), testErrorType, tt.errorReq)
+			status, err := client.InitError(context.Background(), tt.errorType, tt.err)
 			require.NoError(t, err)
 			assert.Equal(t, testErrorStatus, status.Status)
 		})
@@ -188,10 +180,7 @@ func TestExitError(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		// body can be empty
-		if len(req) != 0 {
-			assert.JSONEq(t, `{"errorMessage": "text description of the error", "errorType": "extension.TestReason", "stackTrace": null}`, string(req))
-		}
+		assert.Equal(t, testErr.Error(), string(req))
 
 		w.WriteHeader(http.StatusAccepted)
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
@@ -201,26 +190,20 @@ func TestExitError(t *testing.T) {
 	})
 
 	tests := []struct {
-		name     string
-		errorReq *extapi.ErrorRequest
+		name      string
+		errorType string
+		err       error
 	}{
 		{
-			name:     "nil request",
-			errorReq: nil,
-		},
-		{
-			name: "with request",
-			errorReq: &extapi.ErrorRequest{
-				ErrorMessage: testErrorMessage,
-				ErrorType:    testErrorType,
-				StackTrace:   nil,
-			},
+			name:      "with request",
+			errorType: testErrorType,
+			err:       testErr,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			status, err := client.ExitError(context.Background(), testErrorType, tt.errorReq)
+			status, err := client.ExitError(context.Background(), tt.errorType, tt.err)
 			require.NoError(t, err)
 			assert.Equal(t, testErrorStatus, status.Status)
 		})

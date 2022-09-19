@@ -2,12 +2,11 @@ package extapi_test
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"runtime/debug"
-	"strings"
 
 	"github.com/zakharovvi/lambda-extensions/extapi"
 )
@@ -29,7 +28,7 @@ func ExampleClient() {
 	initFunc := func() error { return nil }
 	if err := initFunc(); err != nil {
 		// report error and exit if initialization failed
-		_, _ = client.InitError(ctx, "ExtensionName.Reason", nil)
+		_, _ = client.InitError(ctx, "ExtensionName.Reason", err)
 		log.Fatalln(err)
 	}
 
@@ -39,7 +38,7 @@ func ExampleClient() {
 		event, err := client.NextEvent(ctx)
 		if err != nil {
 			// report error and exit if event processing failed
-			_, _ = client.ExitError(ctx, "ExtensionName.Reason", nil)
+			_, _ = client.ExitError(ctx, "ExtensionName.Reason", err)
 			log.Fatalln(err)
 		}
 		if event.EventType == extapi.Shutdown {
@@ -50,7 +49,7 @@ func ExampleClient() {
 		processEventFunc := func(event *extapi.NextEventResponse) error { return nil }
 		if err := processEventFunc(event); err != nil {
 			// 4. report error and exit if event processing failed
-			_, _ = client.ExitError(ctx, "ExtensionName.Reason", nil)
+			_, _ = client.ExitError(ctx, "ExtensionName.Reason", err)
 			log.Fatalln(err)
 		}
 	}
@@ -82,26 +81,13 @@ func ExampleClient_ExitError() {
 		log.Fatalln(err)
 	}
 
-	errorType := "LogSubscriptionTypeExtension.UnknownReason"
-
-	// ErrorRequest is optional
-	errResp, err := client.ExitError(ctx, errorType, nil)
+	errResp, err := client.ExitError(ctx, "ExtensionName.Reason", errors.New("text description of the error"))
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 	}
-	_ = errResp
-
-	trace := strings.Split(string(debug.Stack()), "\n")
-	errorReq := &extapi.ErrorRequest{
-		ErrorMessage: "text description of the error",
-		ErrorType:    errorType,
-		StackTrace:   trace,
+	if errResp.Status != "OK" {
+		log.Printf("unknown error response status: %s, want OK", errResp.Status)
 	}
-	errResp, err = client.ExitError(ctx, errorType, errorReq)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	_ = errResp
 }
 
 func ExampleClient_LogsSubscribe() {
@@ -123,7 +109,7 @@ func ExampleClient_LogsSubscribe() {
 	req := extapi.NewLogsSubscribeRequest(server.URL, nil)
 	if err := client.LogsSubscribe(ctx, req); err != nil {
 		// 4. report error and exit if event processing failed
-		_, _ = client.ExitError(ctx, "ExtensionName.Reason", nil)
+		_, _ = client.ExitError(ctx, "ExtensionName.Reason", err)
 		log.Fatalln(err)
 	}
 

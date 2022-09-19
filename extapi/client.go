@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // EventType represents the type of events received from /event/next
@@ -65,12 +66,6 @@ type NextEventResponse struct {
 type Tracing struct {
 	Type  string `json:"type"`
 	Value string `json:"value"`
-}
-
-type ErrorRequest struct {
-	ErrorMessage string   `json:"errorMessage"`
-	ErrorType    string   `json:"errorType"`
-	StackTrace   []string `json:"stackTrace"`
 }
 
 // ErrorResponse is the body of the response for /init/error and /exit/error
@@ -233,26 +228,18 @@ func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 }
 
 // InitError reports an initialization error to the platform. Call it when you registered but failed to initialize
-func (c *Client) InitError(ctx context.Context, errorType string, errorReq *ErrorRequest) (*ErrorResponse, error) {
-	return c.reportError(ctx, errorType, "/init/error", errorReq)
+func (c *Client) InitError(ctx context.Context, errorType string, err error) (*ErrorResponse, error) {
+	return c.reportError(ctx, "/init/error", errorType, err)
 }
 
 // ExitError reports an error to the platform before exiting. Call it when you encounter an unexpected failure
-func (c *Client) ExitError(ctx context.Context, errorType string, errorReq *ErrorRequest) (*ErrorResponse, error) {
-	return c.reportError(ctx, errorType, "/exit/error", errorReq)
+func (c *Client) ExitError(ctx context.Context, errorType string, err error) (*ErrorResponse, error) {
+	return c.reportError(ctx, "/exit/error", errorType, err)
 }
 
-func (c *Client) reportError(ctx context.Context, errorType, action string, errorReq *ErrorRequest) (*ErrorResponse, error) {
-	var body []byte
-	if errorReq != nil {
-		var err error
-		if body, err = json.Marshal(errorReq); err != nil {
-			return nil, err
-		}
-	}
-
+func (c *Client) reportError(ctx context.Context, action, errorType string, err error) (*ErrorResponse, error) {
 	url := fmt.Sprintf("http://%s/2020-01-01/extension%s", c.runtimeAPI, action)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(err.Error()))
 	if err != nil {
 		return nil, err
 	}
