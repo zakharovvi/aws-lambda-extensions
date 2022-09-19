@@ -103,7 +103,7 @@ func DecodeLogs(r io.ReadCloser, logs chan<- Log) error {
 	for d.More() {
 		msg := Log{}
 		if err := d.Decode(&msg); err != nil {
-			return err
+			return fmt.Errorf("could not decode log message from json array: %w", err)
 		}
 		switch msg.LogType {
 		case LogPlatformStart:
@@ -130,7 +130,7 @@ func DecodeLogs(r io.ReadCloser, logs chan<- Log) error {
 			return fmt.Errorf(`could not decode unknown log type "%s" and record "%s"`, msg.LogType, msg.RawRecord)
 		}
 		if err := json.Unmarshal(msg.RawRecord, msg.Record); err != nil {
-			return fmt.Errorf("could not unmarshal record %s for log type %s with error: %w", msg.RawRecord, msg.LogType, err)
+			return fmt.Errorf("could not decode log record %s for log type %s with error: %w", msg.RawRecord, msg.LogType, err)
 		}
 		logs <- msg
 	}
@@ -143,7 +143,7 @@ func DecodeLogs(r io.ReadCloser, logs chan<- Log) error {
 func readBracket(d *json.Decoder, want string) error {
 	t, err := d.Token()
 	if err != nil {
-		return err
+		return fmt.Errorf("malformed json array: %w", err)
 	}
 	delim, ok := t.(json.Delim)
 	if !ok {
