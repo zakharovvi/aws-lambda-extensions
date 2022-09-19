@@ -38,7 +38,7 @@ func (e *LogsExtension) HandleInvokeEvent(ctx context.Context, event *extapi.Nex
 	panic("for log subscriber extension example we don't subscribe to 'invoke' events. 'shutdown' event will be handled by run")
 }
 
-func (e *LogsExtension) Shutdown(ctx context.Context) error {
+func (e *LogsExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason) error {
 	// gracefully shut down logs receiver http server
 	err := e.srv.Shutdown(ctx)
 	close(e.logsCh)

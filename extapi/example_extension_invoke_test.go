@@ -3,7 +3,6 @@ package extapi_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/zakharovvi/lambda-extensions/extapi"
@@ -12,7 +11,7 @@ import (
 type InvokeExtension struct{}
 
 func (s *InvokeExtension) Init(ctx context.Context, client *extapi.Client) error {
-	fmt.Printf("initializing extension for function %s(%s) and handler %s\n", client.FunctionName(), client.FunctionVersion(), client.Handler())
+	log.Printf("initializing extension for function %s(%s) and handler %s\n", client.FunctionName(), client.FunctionVersion(), client.Handler())
 	return nil
 }
 
@@ -21,12 +20,12 @@ func (s *InvokeExtension) HandleInvokeEvent(ctx context.Context, event *extapi.N
 	if err != nil {
 		return err
 	}
-	fmt.Printf("received invokation event: %s", b)
+	log.Printf("received invokation event: %s\n", b)
 	return nil
 }
 
-func (s *InvokeExtension) Shutdown(ctx context.Context) error {
-	fmt.Println("shutting down extension")
+func (s *InvokeExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason) error {
+	log.Printf("shutting down extension due to : %s\n", reason)
 	return nil
 }
 

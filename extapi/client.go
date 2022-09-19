@@ -35,6 +35,8 @@ const (
 	Timeout ShutdownReason = "timout"
 	// Failure is any other shutdown type, such as out-of-memory
 	Failure ShutdownReason = "failure"
+	// ExtensionError is used when one of Client or Extension methods return error. It is not returned by lambda
+	ExtensionError ShutdownReason = "extension_error"
 )
 
 type RegisterRequest struct {

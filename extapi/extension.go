@@ -8,7 +8,7 @@ import (
 type Extension interface {
 	Init(ctx context.Context, client *Client) error
 	HandleInvokeEvent(ctx context.Context, event *NextEventResponse) error
-	Shutdown(ctx context.Context) error
+	Shutdown(ctx context.Context, reason ShutdownReason) error
 }
 
 func Run(ctx context.Context, ext Extension, opts ...Option) error {
@@ -25,12 +25,13 @@ func Run(ctx context.Context, ext Extension, opts ...Option) error {
 			log.Error(err, "client.InitError failed")
 		}
 		log.V(1).Info("calling Extension.Shutdown")
-		if err := ext.Shutdown(ctx); err != nil {
+		if err := ext.Shutdown(ctx, ExtensionError); err != nil {
 			log.Error(err, "Extension.Shutdown failed")
 		}
 		return err
 	}
 	log.V(1).Info("Extension.Init completed. Starting Client.NextEvent loop")
+	shutdownReason := ExtensionError
 loop:
 	for {
 		select {
@@ -58,6 +59,7 @@ loop:
 		}
 
 		if event.EventType == Shutdown {
+			shutdownReason = event.ShutdownReason
 			var cancel context.CancelFunc
 			ctx, cancel = context.WithDeadline(ctx, time.UnixMilli(event.DeadlineMs))
 			defer cancel()
@@ -83,7 +85,7 @@ loop:
 		}
 	}
 	log.V(1).Info("calling Extension.Shutdown")
-	if err := ext.Shutdown(ctx); err != nil {
+	if err := ext.Shutdown(ctx, shutdownReason); err != nil {
 		log.Error(err, "Extension.Shutdown failed")
 	}
 	return err
