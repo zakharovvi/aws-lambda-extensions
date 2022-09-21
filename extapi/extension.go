@@ -84,17 +84,24 @@ loop:
 		}
 	}
 	log.V(1).Info("Client.NextEvent loop stopped")
+	if err != nil {
+		err = fmt.Errorf("extension loop failed: %w", err)
+	}
+
+	log.V(1).Info("calling Extension.Shutdown")
+	if shutdownErr := ext.Shutdown(ctx, shutdownReason); shutdownErr != nil {
+		shutdownErr = fmt.Errorf("Extension.Shutdown failed: %w", shutdownErr)
+		log.Error(shutdownErr, "")
+		if err == nil {
+			err = shutdownErr
+		}
+	}
 
 	if err != nil {
 		log.V(1).Info("calling Client.ExitError", "err", err)
-		if _, err := client.ExitError(ctx, "Extension.HandleInvokeEvent", err); err != nil {
+		if _, err := client.ExitError(ctx, "Extension.Exit", err); err != nil {
 			log.Error(err, "Client.ExitError error failed")
 		}
-		err = fmt.Errorf("extension loop failed: %w", err)
-	}
-	log.V(1).Info("calling Extension.Shutdown")
-	if err := ext.Shutdown(ctx, shutdownReason); err != nil {
-		log.Error(err, "Extension.Shutdown failed")
 	}
 
 	return err
