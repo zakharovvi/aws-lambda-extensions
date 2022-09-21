@@ -2,7 +2,6 @@ package extapi_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -34,7 +33,7 @@ var (
 	respInvoke    = []byte(`
 		{
 			"eventType": "INVOKE",
-			"deadlineMs": 676051,
+			"deadlineMs": 9223372036854775807,
 			"requestId": "3da1f2dc-3222-475e-9205-e2e6c6318895",
 			"invokedFunctionArn": "arn:aws:lambda:us-east-1:123456789012:function:ExtensionTest",
 			"tracing": {
@@ -47,7 +46,7 @@ var (
 		{
 		  "eventType": "SHUTDOWN",
 		  "shutdownReason": "spindown",
-		  "deadlineMs": 676051
+		  "deadlineMs": 9223372036854775807
 		}
 	`)
 	respError = []byte(`
@@ -92,7 +91,7 @@ func TestNextEvent_Invoke(t *testing.T) {
 	assert.Equal(t, "3da1f2dc-3222-475e-9205-e2e6c6318895", event.RequestID)
 	assert.Equal(t, "arn:aws:lambda:us-east-1:123456789012:function:ExtensionTest", event.InvokedFunctionArn)
 	assert.Equal(t, "3da1f2dc-3222-475e-9205-e2e6c6318895", event.RequestID)
-	assert.Equal(t, int64(676051), event.DeadlineMs)
+	assert.Equal(t, int64(9223372036854775807), event.DeadlineMs)
 	assert.Equal(t, "X-Amzn-Trace-Id", event.Tracing.Type)
 	assert.Equal(t, "Root=1-5f35ae12-0c0fec141ab77a00bc047aa2;Parent=2be948a625588e32;Sampled=1", event.Tracing.Value)
 }
@@ -118,7 +117,7 @@ func TestNextEvent_Shutdown(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, extapi.Shutdown, event.EventType)
 	assert.Equal(t, extapi.Spindown, event.ShutdownReason)
-	assert.Equal(t, int64(676051), event.DeadlineMs)
+	assert.Equal(t, int64(9223372036854775807), event.DeadlineMs)
 }
 
 func TestInitError(t *testing.T) {
@@ -237,43 +236,4 @@ func register(t *testing.T) (*extapi.Client, *httptest.Server, *http.ServeMux, e
 	client, err := extapi.Register(context.Background())
 
 	return client, server, mux, err
-}
-
-const (
-	logReceiverURL = "http://example.com:8080/logs"
-)
-
-func TestSubscribe(t *testing.T) {
-	client, server, mux, err := register(t)
-	require.NoError(t, err)
-	defer server.Close()
-	mux.HandleFunc("/2020-08-15/logs", func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
-		assert.Equal(t, http.MethodPut, r.Method)
-		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
-
-		req, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		subscribeReq := &extapi.LogsSubscribeRequest{}
-		assert.NoError(t, json.Unmarshal(req, subscribeReq))
-		assert.Equal(t, logReceiverURL, subscribeReq.Destination.URI)
-		assert.Equal(
-			t,
-			[]extapi.LogSubscriptionType{extapi.LogSubscriptionTypePlatform, extapi.LogSubscriptionTypeFunction, extapi.LogSubscriptionTypeExtension},
-			subscribeReq.LogTypes,
-		)
-
-		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte("OK")); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	subscribeReq := extapi.NewLogsSubscribeRequest(logReceiverURL, nil)
-	err = client.LogsSubscribe(context.Background(), subscribeReq)
-	assert.NoError(t, err)
 }
