@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/zakharovvi/lambda-extensions/extapi"
+	"github.com/zakharovvi/aws-lambda-extensions/extapi"
 )
 
 type testExtension struct {

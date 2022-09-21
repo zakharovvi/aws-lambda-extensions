@@ -1,4 +1,4 @@
-module github.com/zakharovvi/lambda-extensions
+module github.com/zakharovvi/aws-lambda-extensions
 
 go 1.18
 

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/zakharovvi/lambda-extensions/extapi"
+	"github.com/zakharovvi/aws-lambda-extensions/extapi"
 )
 
 // End to end example how to use Client, process events and handle errors.

@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/zakharovvi/lambda-extensions/logsapi"
+	"github.com/zakharovvi/aws-lambda-extensions/logsapi"
 )
 
 func ExampleDecodeLogs() {

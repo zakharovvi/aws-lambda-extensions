@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/stdr"
-	"github.com/zakharovvi/lambda-extensions/extapi"
+	"github.com/zakharovvi/aws-lambda-extensions/extapi"
 )
 
 func HandleRequest(ctx context.Context) (string, error) {

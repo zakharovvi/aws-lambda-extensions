@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zakharovvi/lambda-extensions/extapi"
-	"github.com/zakharovvi/lambda-extensions/logsapi"
+	"github.com/zakharovvi/aws-lambda-extensions/extapi"
+	"github.com/zakharovvi/aws-lambda-extensions/logsapi"
 )
 
 func TestDecodeLogs(t *testing.T) {

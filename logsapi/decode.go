@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/zakharovvi/lambda-extensions/extapi"
+	"github.com/zakharovvi/aws-lambda-extensions/extapi"
 )
 
 type LogType string

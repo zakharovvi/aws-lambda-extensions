@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/zakharovvi/lambda-extensions/extapi"
+	"github.com/zakharovvi/aws-lambda-extensions/extapi"
 )
 
 type InvokeExtension struct{}
