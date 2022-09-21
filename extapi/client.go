@@ -223,7 +223,7 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 	if err != nil {
 		return nil, fmt.Errorf("could not json encode register request: %w", err)
 	}
-	c.log.V(1).Info("sending register request", "body", body)
+	c.log.V(1).Info("sending register request", "body", string(body))
 
 	url := fmt.Sprintf("http://%s/2020-01-01/extension/register", c.runtimeAPI)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
@@ -271,7 +271,7 @@ func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 
 		return nil, err
 	}
-	c.log.V(1).Info("event/next response received")
+	c.log.V(1).Info("event/next response received", "event", nextResp)
 
 	return nextResp, nil
 }

@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sample internal-extension demonstrates how to run an extension in the same binary with a lambda function.
+
+Resources:
+  ExampleInternalExtensionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: example-internal-extension
+      CodeUri: .
+      Handler: main
+      Runtime: go1.x
+      Architectures:
+        - x86_64
+
+Outputs:
+  ExampleInternalExtensionFunction:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt ExampleInternalExtensionFunction.Arn
