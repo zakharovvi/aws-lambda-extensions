@@ -25,9 +25,9 @@ func TestRIE(t *testing.T) {
 		}
 	}()
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 
-	resp, err := http.Get("http://localhost:8080/2015-03-31/functions/function/invocations2015-03-31/functions")
+	resp, err := http.Get("http://localhost:8080/2015-03-31/functions/function/invocation")
 	if err != nil {
 		t.Fatal(err)
 	}
