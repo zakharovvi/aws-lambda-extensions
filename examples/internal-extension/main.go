@@ -70,9 +70,9 @@ func main() {
 			context.Background(),
 			ext,
 			extapi.WithLogger(ext.logger),
-			extapi.WithEventTypes([]extapi.EventType{extapi.Invoke}), // sam local invoke: ShutdownEventNotSupportedForInternalExtension\
+			extapi.WithEventTypes([]extapi.EventType{extapi.Invoke}), // sam local invoke: ShutdownEventNotSupportedForInternalExtension
 		); err != nil {
-			ext.logger.Error(err, "")
+			log.Panic(err)
 		}
 	}()
 	ext.wg.Wait()
