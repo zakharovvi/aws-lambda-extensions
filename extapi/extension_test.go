@@ -39,7 +39,7 @@ func (te *testExtension) HandleInvokeEvent(ctx context.Context, event *extapi.Ne
 	return res
 }
 
-func (te *testExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason) error {
+func (te *testExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
 	if te.shutdownCalled {
 		panic("Shutdown has already been called")
 	}

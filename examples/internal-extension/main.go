@@ -47,10 +47,11 @@ func (ext *Extension) HandleInvokeEvent(ctx context.Context, event *extapi.NextE
 	return nil
 }
 
-func (ext *Extension) Shutdown(ctx context.Context, reason extapi.ShutdownReason) error {
+func (ext *Extension) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
 	ext.logger.Info(
 		"shutting down extension...",
 		"reason", reason,
+		"error", err,
 	)
 
 	return nil

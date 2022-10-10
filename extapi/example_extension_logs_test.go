@@ -14,35 +14,36 @@ type LogsExtension struct {
 	logsCh chan logsapi.Log
 }
 
-func (e *LogsExtension) Init(ctx context.Context, client *extapi.Client) error {
+func (ext *LogsExtension) Init(ctx context.Context, client *extapi.Client) error {
 	// 1. start log processing
 	go func() {
-		for msg := range e.logsCh {
+		for msg := range ext.logsCh {
 			log.Printf("time=%s type=%s\n", msg.LogType, msg.Time)
 		}
 	}()
 
 	// 2. start http server
 	go func() {
-		if err := e.srv.ListenAndServe(); err != http.ErrServerClosed {
+		if err := ext.srv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Println(err)
 		}
 	}()
 
 	// 3. subscribe to lambda logs
-	req := extapi.NewLogsSubscribeRequest(e.srv.Addr, nil)
+	req := extapi.NewLogsSubscribeRequest(ext.srv.Addr, nil)
 
 	return client.LogsSubscribe(ctx, req)
 }
 
-func (e *LogsExtension) HandleInvokeEvent(ctx context.Context, event *extapi.NextEventResponse) error {
+func (ext *LogsExtension) HandleInvokeEvent(ctx context.Context, event *extapi.NextEventResponse) error {
 	panic("for log subscriber extension example we don't subscribe to 'invoke' events. 'shutdown' event will be handled by run")
 }
 
-func (e *LogsExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason) error {
+func (ext *LogsExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+	log.Printf("shutting down extension due to reason=%s error=%s\n", reason, err)
 	// gracefully shut down logs receiver http server
-	err := e.srv.Shutdown(ctx)
-	close(e.logsCh)
+	err = ext.srv.Shutdown(ctx)
+	close(ext.logsCh)
 
 	return err
 }

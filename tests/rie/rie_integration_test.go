@@ -16,6 +16,7 @@ extension.HandleInvokeEvent
 `)
 
 func TestRIE(t *testing.T) {
+	// start RIE server
 	rieCmd := exec.Command("/tmp/aws-lambda-rie", "./rie")
 	stdoutPipe, err := rieCmd.StdoutPipe()
 	if err != nil {
@@ -52,6 +53,7 @@ func TestRIE(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
+	// invoke function
 	resp, err := http.Get("http://localhost:8080/2015-03-31/functions/function/invocations")
 	if err != nil {
 		t.Fatal(err)
@@ -66,7 +68,7 @@ func TestRIE(t *testing.T) {
 		t.Fatalf("want 200 OK HTTP status code. Got %d", resp.StatusCode)
 	}
 
-	// assert file
+	// assert journal file
 	got, err := os.ReadFile("/tmp/rie-test-journal")
 	if err != nil {
 		t.Fatal(err)

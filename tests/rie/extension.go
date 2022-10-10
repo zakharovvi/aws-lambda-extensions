@@ -34,7 +34,7 @@ func (ext *Extension) HandleInvokeEvent(ctx context.Context, event *extapi.NextE
 	return nil
 }
 
-func (ext *Extension) Shutdown(ctx context.Context, reason extapi.ShutdownReason) error {
+func (ext *Extension) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
 	// shutdown event type is not supported in AWS Lambda Runtime Interface Emulator
 
 	return nil

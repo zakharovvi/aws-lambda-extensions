@@ -10,24 +10,24 @@ import (
 
 type InvokeExtension struct{}
 
-func (s *InvokeExtension) Init(ctx context.Context, client *extapi.Client) error {
+func (ext *InvokeExtension) Init(ctx context.Context, client *extapi.Client) error {
 	log.Printf("initializing extension for function %s(%s) and handler %s\n", client.FunctionName(), client.FunctionVersion(), client.Handler())
 
 	return nil
 }
 
-func (s *InvokeExtension) HandleInvokeEvent(ctx context.Context, event *extapi.NextEventResponse) error {
+func (ext *InvokeExtension) HandleInvokeEvent(ctx context.Context, event *extapi.NextEventResponse) error {
 	b, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
-	log.Printf("received invokation event: %s\n", b)
+	log.Printf("received invocation event: %s\n", b)
 
 	return nil
 }
 
-func (s *InvokeExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason) error {
-	log.Printf("shutting down extension due to : %s\n", reason)
+func (ext *InvokeExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+	log.Printf("shutting down extension due to reason=%s error=%s\n", reason, err)
 
 	return nil
 }
