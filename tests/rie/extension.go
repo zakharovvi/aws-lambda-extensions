@@ -40,6 +40,10 @@ func (ext *Extension) Shutdown(ctx context.Context, reason extapi.ShutdownReason
 	return nil
 }
 
+func (ext *Extension) Err() <-chan error {
+	return nil
+}
+
 func main() {
 	var err error
 	journal, err = os.Create("/tmp/rie-test-journal")

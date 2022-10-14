@@ -48,6 +48,10 @@ func (ext *LogsExtension) Shutdown(ctx context.Context, reason extapi.ShutdownRe
 	return err
 }
 
+func (ext *LogsExtension) Err() <-chan error {
+	return nil
+}
+
 func Example_logsSubscribe() {
 	// 1. init http server
 	logsCh := make(chan logsapi.Log)

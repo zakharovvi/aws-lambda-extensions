@@ -48,6 +48,10 @@ func (te *testExtension) Shutdown(ctx context.Context, reason extapi.ShutdownRea
 	return te.shutdownErr
 }
 
+func (te *testExtension) Err() <-chan error {
+	return nil
+}
+
 type handler struct {
 	events          [][]byte
 	registerCalled  bool
@@ -134,7 +138,7 @@ func TestRun(t *testing.T) {
 				events: [][]byte{{}},
 			},
 			&testExtension{},
-			errors.New("extension loop failed: event/next call failed: could not json decode http response : unexpected end of JSON input"),
+			errors.New("extension loop failed: Client.NextEvent failed: event/next call failed: could not json decode http response : unexpected end of JSON input"),
 			false,
 			true,
 		},
@@ -146,7 +150,7 @@ func TestRun(t *testing.T) {
 			&testExtension{
 				handleInvokeEventErrs: []error{errors.New("internal error")},
 			},
-			errors.New("extension loop failed: internal error"),
+			errors.New("extension loop failed: Extension.HandleInvokeEvent failed: internal error"),
 			false,
 			true,
 		},

@@ -32,6 +32,10 @@ func (ext *InvokeExtension) Shutdown(ctx context.Context, reason extapi.Shutdown
 	return nil
 }
 
+func (ext *InvokeExtension) Err() <-chan error {
+	return nil
+}
+
 func Example_invoke() {
 	ext := &InvokeExtension{}
 	if err := extapi.Run(context.Background(), ext); err != nil {
