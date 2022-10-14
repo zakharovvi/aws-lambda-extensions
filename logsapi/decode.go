@@ -1,6 +1,7 @@
 package logsapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -90,7 +91,7 @@ type RecordFunction string
 type RecordExtension string
 
 // DecodeLogs consumes all logs from json array stream and close it afterwards.
-func DecodeLogs(r io.ReadCloser, logs chan<- Log) error {
+func DecodeLogs(ctx context.Context, r io.ReadCloser, logs chan<- Log) error {
 	defer func() {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -132,7 +133,12 @@ func DecodeLogs(r io.ReadCloser, logs chan<- Log) error {
 		if err := json.Unmarshal(msg.RawRecord, msg.Record); err != nil {
 			return fmt.Errorf("could not decode log record %s for log type %s with error: %w", msg.RawRecord, msg.LogType, err)
 		}
-		logs <- msg
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case logs <- msg:
+		}
 	}
 	if err := readBracket(d, "]"); err != nil {
 		return err

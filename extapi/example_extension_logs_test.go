@@ -54,7 +54,7 @@ func Example_logsSubscribe() {
 	srv := &http.Server{
 		Addr: ":0",
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if err := logsapi.DecodeLogs(r.Body, logsCh); err != nil {
+			if err := logsapi.DecodeLogs(r.Context(), r.Body, logsCh); err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				log.Println(err)
 

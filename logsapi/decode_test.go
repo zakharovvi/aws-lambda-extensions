@@ -1,6 +1,7 @@
 package logsapi_test
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"strings"
@@ -100,7 +101,7 @@ func TestDecodeLogs(t *testing.T) {
 			t.Parallel()
 			logsCh := make(chan logsapi.Log, 100)
 			r := io.NopCloser(strings.NewReader(tt.response))
-			err := logsapi.DecodeLogs(r, logsCh)
+			err := logsapi.DecodeLogs(context.Background(), r, logsCh)
 			if tt.wantErrorContains == "" {
 				assert.NoError(t, err)
 			} else {
@@ -379,7 +380,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 			t.Parallel()
 			logs := make(chan logsapi.Log, 1)
 			r := io.NopCloser(strings.NewReader(tt.response))
-			err := logsapi.DecodeLogs(r, logs)
+			err := logsapi.DecodeLogs(context.Background(), r, logs)
 			require.NoError(t, err)
 
 			log := <-logs

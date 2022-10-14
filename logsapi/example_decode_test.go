@@ -30,7 +30,7 @@ func ExampleDecodeLogs() {
 
 	// 4. use DecodeLogs in HTTP handler
 	http.HandleFunc("/logs-receiver", func(w http.ResponseWriter, r *http.Request) {
-		if err := logsapi.DecodeLogs(r.Body, logsCh); err != nil {
+		if err := logsapi.DecodeLogs(r.Context(), r.Body, logsCh); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			log.Println(err)
 
