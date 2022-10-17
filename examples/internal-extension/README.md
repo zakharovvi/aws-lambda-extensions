@@ -13,4 +13,5 @@ This example demonstrates how to use the library to build extension embedded int
 ### Steps
 
 1. build extension `sam build`
+1. validate SAM template: `sam validate`
 1. run function locally: `sam local invoke`

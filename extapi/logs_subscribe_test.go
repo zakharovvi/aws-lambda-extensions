@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	logReceiverURL = "http://example.com:8080/logs"
+	logReceiverURL = "http://sandbox.localdomain:8080"
 )
 
 func TestSubscribe(t *testing.T) {
@@ -36,7 +36,7 @@ func TestSubscribe(t *testing.T) {
 		assert.Equal(t, logReceiverURL, subscribeReq.Destination.URI)
 		assert.Equal(
 			t,
-			[]extapi.LogSubscriptionType{extapi.LogSubscriptionTypePlatform, extapi.LogSubscriptionTypeFunction, extapi.LogSubscriptionTypeExtension},
+			[]extapi.LogSubscriptionType{extapi.LogSubscriptionTypePlatform, extapi.LogSubscriptionTypeFunction},
 			subscribeReq.LogTypes,
 		)
 
@@ -46,7 +46,7 @@ func TestSubscribe(t *testing.T) {
 		}
 	})
 
-	subscribeReq := extapi.NewLogsSubscribeRequest(logReceiverURL, nil)
+	subscribeReq := extapi.NewLogsSubscribeRequest(logReceiverURL, nil, nil)
 	err = client.LogsSubscribe(context.Background(), subscribeReq)
 	assert.NoError(t, err)
 }

@@ -30,7 +30,7 @@ func (ext *LogsExtension) Init(ctx context.Context, client *extapi.Client) error
 	}()
 
 	// 3. subscribe to lambda logs
-	req := extapi.NewLogsSubscribeRequest(ext.srv.Addr, nil)
+	req := extapi.NewLogsSubscribeRequest("http://sandbox.localdomain:8080", nil, nil)
 
 	return client.LogsSubscribe(ctx, req)
 }
@@ -40,7 +40,7 @@ func (ext *LogsExtension) HandleInvokeEvent(ctx context.Context, event *extapi.N
 }
 
 func (ext *LogsExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
-	log.Printf("shutting down extension due to reason=%s error=%s\n", reason, err)
+	log.Printf("shutting down extension due to reason=%s error=%v\n", reason, err)
 	// gracefully shut down logs receiver http server
 	err = ext.srv.Shutdown(ctx)
 	close(ext.logsCh)
@@ -56,7 +56,7 @@ func Example_logsSubscribe() {
 	// 1. init http server
 	logsCh := make(chan logsapi.Log)
 	srv := &http.Server{
-		Addr: ":0",
+		Addr: "sandbox.localdomain:8080",
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if err := logsapi.DecodeLogs(r.Context(), r.Body, logsCh); err != nil {
 				w.WriteHeader(http.StatusBadRequest)

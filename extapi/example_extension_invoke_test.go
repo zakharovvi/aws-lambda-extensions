@@ -27,7 +27,7 @@ func (ext *InvokeExtension) HandleInvokeEvent(ctx context.Context, event *extapi
 }
 
 func (ext *InvokeExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
-	log.Printf("shutting down extension due to reason=%s error=%s\n", reason, err)
+	log.Printf("shutting down extension due to reason=%s error=%v\n", reason, err)
 
 	return nil
 }
@@ -37,8 +37,7 @@ func (ext *InvokeExtension) Err() <-chan error {
 }
 
 func Example_invoke() {
-	ext := &InvokeExtension{}
-	if err := extapi.Run(context.Background(), ext); err != nil {
+	if err := extapi.Run(context.Background(), &InvokeExtension{}); err != nil {
 		log.Panic(err)
 	}
 }

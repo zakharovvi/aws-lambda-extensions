@@ -92,28 +92,29 @@ func ExampleClient_ExitError() {
 
 func ExampleClient_LogsSubscribe() {
 	ctx := context.Background()
+	destinationHostPort := "sandbox.localdomain:8080"
 
-	// 1. register extension and subscribe only to shutdown events
-	client, err := extapi.Register(ctx, extapi.WithEventTypes([]extapi.EventType{extapi.Shutdown}))
-	if err != nil {
-		log.Panic(err)
-	}
-
-	// 2. start log receiving server
+	// 1. start log receiving server
 	srv := http.Server{
-		Addr: ":0",
+		Addr: destinationHostPort,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// process logs
 		}),
 	}
 	defer func() {
-		if err := srv.Shutdown(ctx); err != nil {
+		if err := srv.ListenAndServe(); err != nil {
 			log.Println(err)
 		}
 	}()
 
+	// 2. register extension and subscribe only to shutdown events
+	client, err := extapi.Register(ctx, extapi.WithEventTypes([]extapi.EventType{extapi.Shutdown}))
+	if err != nil {
+		log.Panic(err)
+	}
+
 	// 3. subscribe to logs api
-	req := extapi.NewLogsSubscribeRequest(srv.Addr, nil)
+	req := extapi.NewLogsSubscribeRequest("http://"+destinationHostPort, nil, nil)
 	if err := client.LogsSubscribe(ctx, req); err != nil {
 		// 4. report error and exit if event processing failed
 		_, _ = client.InitError(ctx, "ExtensionName.Reason", err)

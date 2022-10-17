@@ -76,13 +76,16 @@ type LogsSubscribeRequest struct {
 	Destination   *LogsDestination      `json:"destination"`
 }
 
-func NewLogsSubscribeRequest(url string, logTypes []LogSubscriptionType) *LogsSubscribeRequest {
+func NewLogsSubscribeRequest(url string, logTypes []LogSubscriptionType, bufferingCfg *LogsBufferingCfg) *LogsSubscribeRequest {
 	if len(logTypes) == 0 {
-		logTypes = append(logTypes, LogSubscriptionTypePlatform, LogSubscriptionTypeFunction, LogSubscriptionTypeExtension)
+		// do not subscribe to LogSubscriptionTypeExtension by default to avoid recursion
+		logTypes = append(logTypes, LogSubscriptionTypePlatform, LogSubscriptionTypeFunction)
 	}
 
 	return &LogsSubscribeRequest{
-		LogTypes: logTypes,
+		SchemaVersion: LogsSchemaVersion20210318,
+		LogTypes:     logTypes,
+		BufferingCfg: bufferingCfg,
 		Destination: &LogsDestination{
 			Protocol: HTTPProto,
 			URI:      url,
