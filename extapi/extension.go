@@ -45,10 +45,11 @@ func Run(ctx context.Context, ext Extension, opts ...Option) error {
 	if loopErr != nil {
 		return loopErr
 	}
+
 	return shutdownErr
 }
 
-// shutdown calls Extension.Shutdown and report an error to Client.ExitError if any
+// shutdown calls Extension.Shutdown and report an error to Client.ExitError if any.
 func shutdown(ctx context.Context, client *Client, ext Extension, event *NextEventResponse, err error) error {
 	reason := ExtensionError
 	if event != nil {
@@ -75,6 +76,7 @@ func shutdown(ctx context.Context, client *Client, ext Extension, event *NextEve
 			client.log.Error(err, "Client.ExitError error failed")
 		}
 	}
+
 	return shutdownErr
 }
 

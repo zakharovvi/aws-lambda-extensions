@@ -84,8 +84,8 @@ func NewLogsSubscribeRequest(url string, logTypes []LogSubscriptionType, bufferi
 
 	return &LogsSubscribeRequest{
 		SchemaVersion: LogsSchemaVersion20210318,
-		LogTypes:     logTypes,
-		BufferingCfg: bufferingCfg,
+		LogTypes:      logTypes,
+		BufferingCfg:  bufferingCfg,
 		Destination: &LogsDestination{
 			Protocol: HTTPProto,
 			URI:      url,

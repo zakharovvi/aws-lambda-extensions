@@ -52,14 +52,14 @@ func (te *testExtension) Err() <-chan error {
 	return nil
 }
 
-type handler struct {
+type lambdaAPIMock struct {
 	events          [][]byte
 	registerCalled  bool
 	initErrorCalled bool
 	exitErrorCalled bool
 }
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *lambdaAPIMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/2020-01-01/extension/register":
 		if h.registerCalled {
@@ -104,7 +104,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func TestRun(t *testing.T) {
 	tests := []struct {
 		name                string
-		handler             *handler
+		handler             *lambdaAPIMock
 		ext                 *testExtension
 		wantRunErr          error
 		wantInitErrorCalled bool
@@ -112,7 +112,7 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			"simple",
-			&handler{
+			&lambdaAPIMock{
 				events: [][]byte{respInvoke, respInvoke, respShutdown},
 			},
 			&testExtension{
@@ -124,7 +124,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			"Extension.Init failed",
-			&handler{},
+			&lambdaAPIMock{},
 			&testExtension{
 				initErr: errors.New("internal error"),
 			},
@@ -134,7 +134,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			"Client.NextEvent failed",
-			&handler{
+			&lambdaAPIMock{
 				events: [][]byte{{}},
 			},
 			&testExtension{},
@@ -144,7 +144,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			"Extension.HandleInvokeEvent failed",
-			&handler{
+			&lambdaAPIMock{
 				events: [][]byte{respInvoke},
 			},
 			&testExtension{
@@ -156,7 +156,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			"Extension.Shutdown failed",
-			&handler{
+			&lambdaAPIMock{
 				events: [][]byte{respShutdown},
 			},
 			&testExtension{

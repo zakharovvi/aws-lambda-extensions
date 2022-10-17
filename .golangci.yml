@@ -27,6 +27,9 @@ linters:
     - sqlclosecheck
     - structcheck
     - wastedassign
+    - wrapcheck
+    - testableexamples
+    - gocognit
 issues:
   exclude-rules:
     - path: _test\.go

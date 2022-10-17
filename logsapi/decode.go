@@ -29,7 +29,7 @@ type Log struct {
 	LogType   LogType         `json:"type"`
 	Time      time.Time       `json:"time"`
 	RawRecord json.RawMessage `json:"record"`
-	Record    any
+	Record    any             `json:"-"`
 }
 
 type RecordPlatformStart struct {
@@ -106,39 +106,61 @@ func DecodeLogs(ctx context.Context, r io.ReadCloser, logs chan<- Log) error {
 		if err := d.Decode(&msg); err != nil {
 			return fmt.Errorf("could not decode log message from json array: %w", err)
 		}
+		var unmarshalErr error
 		switch msg.LogType {
 		case LogPlatformStart:
-			msg.Record = new(RecordPlatformStart)
+			record := RecordPlatformStart{}
+			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+			msg.Record = record
 		case LogPlatformEnd:
-			msg.Record = new(RecordPlatformEnd)
+			record := RecordPlatformEnd{}
+			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+			msg.Record = record
 		case LogPlatformReport:
-			msg.Record = new(RecordPlatformReport)
+			record := RecordPlatformReport{}
+			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+			msg.Record = record
 		case LogPlatformExtension:
-			msg.Record = new(RecordPlatformExtension)
+			record := RecordPlatformExtension{}
+			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+			msg.Record = record
 		case LogPlatformLogsSubscription:
-			msg.Record = new(RecordPlatformLogsSubscription)
+			record := RecordPlatformLogsSubscription{}
+			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+			msg.Record = record
 		case LogPlatformLogsDropped:
-			msg.Record = new(RecordPlatformLogsDropped)
+			record := RecordPlatformLogsDropped{}
+			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+			msg.Record = record
 		case LogPlatformFault:
-			msg.Record = new(RecordPlatformFault)
+			record := RecordPlatformFault("")
+			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+			msg.Record = record
 		case LogPlatformRuntimeDone:
-			msg.Record = new(RecordPlatformRuntimeDone)
+			record := RecordPlatformRuntimeDone{}
+			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+			msg.Record = record
 		case LogFunction:
-			msg.Record = new(RecordFunction)
+			record := RecordFunction("")
+			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+			msg.Record = record
 		case LogExtension:
-			msg.Record = new(RecordExtension)
+			record := RecordExtension("")
+			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+			msg.Record = record
 		default:
 			return fmt.Errorf(`could not decode unknown log type "%s" and record "%s"`, msg.LogType, msg.RawRecord)
 		}
-		if err := json.Unmarshal(msg.RawRecord, msg.Record); err != nil {
-			return fmt.Errorf("could not decode log record %s for log type %s with error: %w", msg.RawRecord, msg.LogType, err)
+		if unmarshalErr != nil {
+			return fmt.Errorf("could not decode log record %s for log type %s with error: %w", msg.RawRecord, msg.LogType, unmarshalErr)
 		}
 
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
-		case logs <- msg:
+			return fmt.Errorf("decoding was interrupted with context error: %w", ctx.Err())
+		default:
 		}
+		logs <- msg
 	}
 	if err := readBracket(d, "]"); err != nil {
 		return err

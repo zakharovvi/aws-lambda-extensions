@@ -43,7 +43,7 @@ func TestDecodeLogs(t *testing.T) {
 					LogType:   logsapi.LogPlatformStart,
 					Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 					RawRecord: json.RawMessage(`{"requestId": "6f7f0961f83442118a7af6fe80b88d56"}`),
-					Record: &logsapi.RecordPlatformStart{
+					Record: logsapi.RecordPlatformStart{
 						RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 						Version:   "",
 					},
@@ -52,7 +52,7 @@ func TestDecodeLogs(t *testing.T) {
 					LogType:   logsapi.LogPlatformEnd,
 					Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 					RawRecord: json.RawMessage(`{"requestId": "6f7f0961f83442118a7af6fe80b88d56"}`),
-					Record: &logsapi.RecordPlatformEnd{
+					Record: logsapi.RecordPlatformEnd{
 						RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 					},
 				},
@@ -86,7 +86,7 @@ func TestDecodeLogs(t *testing.T) {
 					LogType:   logsapi.LogPlatformStart,
 					Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 					RawRecord: json.RawMessage(`{"requestId": "6f7f0961f83442118a7af6fe80b88d56"}`),
-					Record: &logsapi.RecordPlatformStart{
+					Record: logsapi.RecordPlatformStart{
 						RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 						Version:   "",
 					},
@@ -126,10 +126,6 @@ func TestDecodeLogs(t *testing.T) {
 func TestDecodeLogs_LogTypes(t *testing.T) {
 	t.Parallel()
 
-	platformFaultRecord := logsapi.RecordPlatformFault("RequestId: d783b35e-a91d-4251-af17-035953428a2c Process exited before completing request")
-	functionRecord := logsapi.RecordFunction("Hello from function")
-	extensionRecord := logsapi.RecordExtension("Hello from extension")
-
 	tests := []struct {
 		name     string
 		response string
@@ -148,7 +144,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 				LogType:   logsapi.LogPlatformStart,
 				Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`{"requestId": "6f7f0961f83442118a7af6fe80b88d56"}`),
-				Record: &logsapi.RecordPlatformStart{
+				Record: logsapi.RecordPlatformStart{
 					RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 					Version:   "",
 				},
@@ -167,7 +163,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 				LogType:   logsapi.LogPlatformEnd,
 				Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`{"requestId": "6f7f0961f83442118a7af6fe80b88d56"}`),
-				Record: &logsapi.RecordPlatformEnd{
+				Record: logsapi.RecordPlatformEnd{
 					RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 				},
 			},
@@ -203,7 +199,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 						"initDurationMs": 116.67
 					}
 				}`),
-				Record: &logsapi.RecordPlatformReport{
+				Record: logsapi.RecordPlatformReport{
 					RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 					Metrics: logsapi.Metrics{
 						DurationMs:       101.51,
@@ -228,7 +224,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 				LogType:   logsapi.LogPlatformFault,
 				Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`"RequestId: d783b35e-a91d-4251-af17-035953428a2c Process exited before completing request"`),
-				Record:    &platformFaultRecord,
+				Record:    logsapi.RecordPlatformFault("RequestId: d783b35e-a91d-4251-af17-035953428a2c Process exited before completing request"),
 			},
 		},
 		{
@@ -252,7 +248,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 						"state": "Ready",
 						"events": ["INVOKE", "SHUTDOWN"]
 				 }`),
-				Record: &logsapi.RecordPlatformExtension{
+				Record: logsapi.RecordPlatformExtension{
 					Events: []extapi.EventType{extapi.Invoke, extapi.Shutdown},
 					Name:   "Foo.bar",
 					State:  "Ready",
@@ -280,7 +276,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 						"state": "Subscribed",
 						"types": ["function", "platform"]
 				}`),
-				Record: &logsapi.RecordPlatformLogsSubscription{
+				Record: logsapi.RecordPlatformLogsSubscription{
 					Name:  "Foo.bar",
 					State: "Subscribed",
 					Types: []extapi.LogSubscriptionType{extapi.LogSubscriptionTypeFunction, extapi.LogSubscriptionTypePlatform},
@@ -308,7 +304,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 						"droppedRecords": 123,
 						"droppedBytes": 12345
 				}`),
-				Record: &logsapi.RecordPlatformLogsDropped{
+				Record: logsapi.RecordPlatformLogsDropped{
 					DroppedBytes:   12345,
 					DroppedRecords: 123,
 					Reason:         "Consumer seems to have fallen behind as it has not acknowledged receipt of logs.",
@@ -334,7 +330,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 					  "requestId":"6f7f0961f83442118a7af6fe80b88",
 					  "status": "timeout"
 				}`),
-				Record: &logsapi.RecordPlatformRuntimeDone{
+				Record: logsapi.RecordPlatformRuntimeDone{
 					RequestID: "6f7f0961f83442118a7af6fe80b88",
 					Status:    logsapi.RuntimeDoneTimeout,
 				},
@@ -353,7 +349,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 				LogType:   logsapi.LogFunction,
 				Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`"Hello from function"`),
-				Record:    &functionRecord,
+				Record:    logsapi.RecordFunction("Hello from function"),
 			},
 		},
 		{
@@ -369,7 +365,7 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 				LogType:   logsapi.LogExtension,
 				Time:      time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
 				RawRecord: json.RawMessage(`"Hello from extension"`),
-				Record:    &extensionRecord,
+				Record:    logsapi.RecordExtension("Hello from extension"),
 			},
 		},
 	}

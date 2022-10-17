@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  This example demonstrates how to use Lambda Logs API and deploy extension as a separate binary in a lambda layer.
+
+Resources:
+  ExampleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: example-logs-subscriber
+      CodeUri: function
+      Handler: main
+      Runtime: go1.x
+      Architectures:
+        - x86_64
+      Layers:
+        - !Ref ExtensionLayer
+  ExtensionLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: example-logs-subscriber
+      Description: Example Logs Subscriber Extension
+      CompatibleArchitectures:
+        - x86_64
+      ContentUri: extension
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: makefile
+
+Outputs:
+  ExampleLogsSubscriberFunction:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt ExampleFunction.Arn
