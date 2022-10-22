@@ -2,6 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/zakharovvi/aws-lambda-extensions.svg)](https://pkg.go.dev/github.com/zakharovvi/aws-lambda-extensions)
 [![ci](https://github.com/zakharovvi/aws-lambda-extensions/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zakharovvi/aws-lambda-extensions/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/zakharovvi/aws-lambda-extensions/branch/main/graph/badge.svg?token=9TP4BHC4RR)](https://codecov.io/gh/zakharovvi/aws-lambda-extensions)
 
 This repository contains framework and helper functions to build your own AWS lambda extensions in Go.
 
