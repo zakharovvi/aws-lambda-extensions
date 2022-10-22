@@ -6,14 +6,28 @@ import (
 	"time"
 )
 
+// Extension abstracts the extension logic from Lambda Extensions API.
+// For Logs API extension, use logsapi.LogProcessor and logsapi.Run.
 type Extension interface {
+	// Init is called after extension Register and before invoking lambda function.
+	// It's the best place to make network connections, warmup caches, preallocate buffers, etc.
 	Init(ctx context.Context, client *Client) error
+	// HandleInvokeEvent is called after receiving Invoke event type from Lambda API.
+	// Shutdown event type is handled inside Run internally and not exposed to the Extension.
 	HandleInvokeEvent(ctx context.Context, event *NextEventResponse) error
+	// Shutdown is called when Lambda API signals the extension to stop or in case of an error.
+	// There will be no calls of HandleInvokeEvent after Shutdown was called.
+	// Extension should flush all unsaved changes to persistent storage.
+	// Run will return after calling the Shutdown and handling its result.
 	Shutdown(ctx context.Context, reason ShutdownReason, err error) error
+	// Err signals an error to Run loop and stop the extension.
+	// Only the first error is read from the channel. Consider using unblocking send to put errors into the channel.
+	// error channel can be nil.
 	Err() <-chan error
 }
 
-// Run runs the Extension and blocks the current goroutine till Extension lifecycle is finished.
+// Run runs the Extension.
+// Run blocks the current goroutine till extension lifecycle is finished or error occurs.
 func Run(ctx context.Context, ext Extension, opts ...Option) error {
 	client, registerErr := Register(ctx, opts...)
 	if registerErr != nil {

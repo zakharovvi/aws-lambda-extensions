@@ -150,6 +150,8 @@ func WithLogger(log logr.Logger) Option {
 	return loggerOption{log}
 }
 
+// Client is a Low-level Lambda API client.
+// In most situations it's better to use high-level handlers extapi.Run and logsapi.Run.
 type Client struct {
 	runtimeAPI   string
 	httpClient   *http.Client

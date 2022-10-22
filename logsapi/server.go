@@ -103,7 +103,8 @@ type extension struct {
 	bufferingCfg *extapi.LogsBufferingCfg
 }
 
-// Run runs the LogProcessor and blocks the current goroutine till Extension lifecycle is finished.
+// Run runs the LogProcessor.
+// Run blocks the current goroutine till extension lifecycle is finished or error occurs.
 func Run(ctx context.Context, lp LogProcessor, opts ...Option) error {
 	options := options{
 		destinationAddr: "sandbox.localdomain:0",
