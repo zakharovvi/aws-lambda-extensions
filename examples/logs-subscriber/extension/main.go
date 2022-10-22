@@ -1,3 +1,4 @@
+// Sample extension to demonstrate how to use Lambda Logs API.
 package main
 
 import (

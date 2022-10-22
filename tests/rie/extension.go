@@ -1,3 +1,4 @@
+// This test uses AWS Lambda Runtime Interface Emulator to check simple lambda function with internal extension using this library.
 package main
 
 import (

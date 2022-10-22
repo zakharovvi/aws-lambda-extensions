@@ -1,3 +1,4 @@
+// Sample lambda function to demonstrate Logs API extension.
 package main
 
 import (

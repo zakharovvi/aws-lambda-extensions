@@ -72,8 +72,8 @@ func ExampleRegister() {
 	_ = client
 }
 
-// Client.ExitError and Client.InitError accept error details to send to lambda.
-func ExampleClient_ExitError() {
+// Client.InitError accept error details to send to lambda.
+func ExampleClient_InitError() {
 	ctx := context.Background()
 
 	client, err := extapi.Register(ctx)
@@ -81,7 +81,8 @@ func ExampleClient_ExitError() {
 		log.Panic(err)
 	}
 
-	errResp, err := client.ExitError(ctx, "ExtensionName.Reason", errors.New("text description of the error"))
+	// if something went wrong call client.InitError and exit without calling client.NextEvent.
+	errResp, err := client.InitError(ctx, "ExtensionName.Reason", errors.New("text description of the error"))
 	if err != nil {
 		log.Println(err)
 	}
