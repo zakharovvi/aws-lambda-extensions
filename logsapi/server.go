@@ -14,6 +14,9 @@ import (
 
 // LogProcessor implements client logic to process and store log messages.
 type LogProcessor interface {
+	// Init is called before starting receiving logs and Process.
+	// It's the best place to make network connections, warmup caches, preallocate buffers, etc.
+	Init(ctx context.Context, client *extapi.Client) error
 	// Process stores log message in persistent storage or accumulate in a buffer and flush periodically.
 	Process(ctx context.Context, msg Log) error
 	// Shutdown is called before exiting the extension.
@@ -144,7 +147,13 @@ func Run(ctx context.Context, lp LogProcessor, opts ...Option) error {
 }
 
 func (ext *extension) Init(ctx context.Context, client *extapi.Client) error {
+	// start log processing goroutine before LogProcessor.Init().
+	// in case of Init error ext.Shutdown is called and waits for ext.doneCh to be closed in ext.startLogProcessing
 	go ext.startLogProcessing(ctx)
+
+	if err := ext.lp.Init(ctx, client); err != nil {
+		return fmt.Errorf("LogProcessor.Init failed: %w", err)
+	}
 
 	ext.log.V(1).Info("starting log receiving HTTP server")
 	ln, err := net.Listen("tcp", ext.srv.Addr)
@@ -167,7 +176,10 @@ func (ext *extension) Init(ctx context.Context, client *extapi.Client) error {
 	}()
 
 	// subscribe to lambda logs
-	url := "http://" + ln.Addr().String()
+	url, err := ext.destinationURL(ln.Addr())
+	if err != nil {
+		return fmt.Errorf("could not build url for LogsSubscribe API call: %w", err)
+	}
 	ext.log.V(1).Info(
 		"calling Client.LogsSubscribe",
 		"url", url,
@@ -177,6 +189,23 @@ func (ext *extension) Init(ctx context.Context, client *extapi.Client) error {
 	req := extapi.NewLogsSubscribeRequest(url, ext.logTypes, ext.bufferingCfg)
 
 	return client.LogsSubscribe(ctx, req)
+}
+
+func (ext *extension) destinationURL(listenerAddr net.Addr) (string, error) {
+	// we should get host from the user,
+	// as host in listenerAddr is resolved to ip address which is not permitted in Lambda API
+	host, _, err := net.SplitHostPort(ext.srv.Addr)
+	if err != nil {
+		return "", err
+	}
+
+	// if user provided port is zero we should get the actual port from the listener
+	_, port, err := net.SplitHostPort(listenerAddr.String())
+	if err != nil {
+		return "", err
+	}
+
+	return "http://" + net.JoinHostPort(host, port), nil
 }
 
 func (ext *extension) HandleInvokeEvent(ctx context.Context, event *extapi.NextEventResponse) error {

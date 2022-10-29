@@ -11,7 +11,12 @@ import (
 type Extension struct{}
 
 func (ext *Extension) Init(ctx context.Context, client *extapi.Client) error {
-	log.Printf("initializing extension for function %s(%s) and handler %s\n", client.FunctionName(), client.FunctionVersion(), client.Handler())
+	log.Printf(
+		"initializing extension for function %s(%s) and handler %s\n",
+		client.FunctionName(),
+		client.FunctionVersion(),
+		client.Handler(),
+	)
 
 	return nil
 }

@@ -10,13 +10,24 @@ import (
 
 type LogProcessor struct{}
 
-func (l *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
+func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
+	log.Printf(
+		"initializing LogProcessor for function %s(%s) and handler %s\n",
+		client.FunctionName(),
+		client.FunctionVersion(),
+		client.Handler(),
+	)
+
+	return nil
+}
+
+func (lp *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
 	log.Printf("time=%s type=%s\n", msg.LogType, msg.Time)
 
 	return nil
 }
 
-func (l *LogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+func (lp *LogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
 	log.Printf("shutting down extension due to reason=%s error=%v\n", reason, err)
 
 	return nil

@@ -16,17 +16,29 @@ type LogProcessor struct {
 	logger logr.Logger
 }
 
-func (l *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
+func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
+	lp.logger.Info(
+		"initializing log processor...",
+		"FunctionName", client.FunctionName(),
+		"FunctionVersion", client.FunctionVersion(),
+		"handler", client.Handler(),
+		"extensionID", client.ExtensionID(),
+	)
+
+	return nil
+}
+
+func (lp *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
 	msg.RawRecord = nil // do not log raw bytes
-	l.logger.Info(
+	lp.logger.Info(
 		"received log message",
 		"msg", msg,
 	)
 	return nil
 }
 
-func (l *LogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
-	l.logger.Info(
+func (lp *LogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+	lp.logger.Info(
 		"shutting down LogProcessor...",
 		"reason", reason,
 		"error", err,

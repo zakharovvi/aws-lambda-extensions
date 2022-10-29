@@ -40,29 +40,37 @@ var (
 )
 
 type testLogProcessor struct {
+	initCalled     bool
+	initErr        error
 	receivedLogs   []logsapi.Log
 	processErrors  []error
 	shutdownErr    error
 	shutdownCalled bool
 }
 
-func (t *testLogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
-	t.receivedLogs = append(t.receivedLogs, msg)
+func (lp *testLogProcessor) Init(ctx context.Context, client *extapi.Client) error {
+	lp.initCalled = true
 
-	res := t.processErrors[0]
-	t.processErrors = t.processErrors[1:]
+	return lp.initErr
+}
+
+func (lp *testLogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
+	lp.receivedLogs = append(lp.receivedLogs, msg)
+
+	res := lp.processErrors[0]
+	lp.processErrors = lp.processErrors[1:]
 
 	return res
 }
 
-func (t *testLogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
-	t.shutdownCalled = true
+func (lp *testLogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+	lp.shutdownCalled = true
 
-	return t.shutdownErr
+	return lp.shutdownErr
 }
 
 type lambdaAPIMock struct {
-	logsSubscriberURL   string
+	wantDestinationURI  string
 	logsRequests        [][]byte
 	wantLogsResponses   []int
 	logsSubscribeStatus int
@@ -85,7 +93,7 @@ func (h *lambdaAPIMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case "/2020-01-01/extension/event/next":
 		for _, logs := range h.logsRequests {
-			req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, h.logsSubscriberURL, bytes.NewReader(logs))
+			req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, h.wantDestinationURI, bytes.NewReader(logs))
 			if err != nil {
 				log.Panic(err)
 			}
@@ -123,6 +131,15 @@ func (h *lambdaAPIMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case "/2020-08-15/logs":
 		h.logsSubscribeCalled = true
+
+		subscription := extapi.LogsSubscribeRequest{}
+		if err := json.NewDecoder(r.Body).Decode(&subscription); err != nil {
+			log.Panic(err)
+		}
+		if subscription.Destination.URI != h.wantDestinationURI {
+			log.Panicf("want desination uri %s, got %s", h.wantDestinationURI, subscription.Destination.URI)
+		}
+
 		status := http.StatusOK
 		if h.logsSubscribeStatus != 0 {
 			status = h.logsSubscribeStatus
@@ -306,11 +323,24 @@ func TestRun(t *testing.T) {
 			false,
 			true,
 		},
+		{
+			"LogProcessor.Init failed",
+			&lambdaAPIMock{},
+			&testLogProcessor{
+				initErr: errors.New("test error"),
+			},
+			"localhost:10000",
+			nil,
+			errors.New("Extension.Init failed: LogProcessor.Init failed: test error"),
+			false,
+			true,
+			false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.apiMock.logsSubscriberURL = "http://" + tt.destinationAddr
+			tt.apiMock.wantDestinationURI = "http://" + tt.destinationAddr
 			server := httptest.NewServer(tt.apiMock)
 			defer server.Close()
 			t.Setenv("AWS_LAMBDA_RUNTIME_API", server.Listener.Addr().String())
@@ -321,6 +351,7 @@ func TestRun(t *testing.T) {
 			} else {
 				require.EqualError(t, err, tt.wantRunErr.Error())
 			}
+			require.True(t, tt.lp.initCalled)
 			require.True(t, tt.lp.shutdownCalled)
 			require.True(t, tt.apiMock.registerCalled)
 			require.Equal(t, tt.wantLogsSubscribeCalled, tt.apiMock.logsSubscribeCalled)
