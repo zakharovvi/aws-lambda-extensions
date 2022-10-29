@@ -202,11 +202,11 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 				Record: logsapi.RecordPlatformReport{
 					RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 					Metrics: logsapi.Metrics{
-						DurationMs:       101.51,
-						BilledDurationMs: 300,
-						MemorySizeMB:     512,
-						MaxMemoryUsedMB:  33,
-						InitDurationMs:   116.67,
+						Duration:        logsapi.Duration(101510 * time.Microsecond),
+						BilledDuration:  logsapi.Duration(300 * time.Millisecond),
+						MemorySizeMB:    512,
+						MaxMemoryUsedMB: 33,
+						InitDuration:    logsapi.Duration(116670 * time.Microsecond),
 					},
 				},
 			},

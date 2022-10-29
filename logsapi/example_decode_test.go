@@ -23,7 +23,7 @@ func ExampleDecodeLogs() {
 				continue
 			}
 			log.Println(report.RequestID)
-			log.Println(report.Metrics.BilledDurationMs)
+			log.Println(report.Metrics.BilledDuration)
 			log.Println(report.Metrics.MaxMemoryUsedMB)
 		}
 	}()

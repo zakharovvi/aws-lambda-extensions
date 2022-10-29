@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"time"
 
 	"github.com/go-logr/stdr"
 	"github.com/zakharovvi/aws-lambda-extensions/extapi"
@@ -13,7 +14,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -24,9 +24,9 @@ import (
 type LogProcessor struct {
 	sdk *metric.MeterProvider
 
-	duration           syncfloat64.Histogram
-	billedDuration     syncfloat64.Histogram
-	initDuration       syncfloat64.Histogram
+	duration           syncint64.Histogram
+	billedDuration     syncint64.Histogram
+	initDuration       syncint64.Histogram
 	memorySizeMB       syncint64.Histogram
 	maxMemoryUsedMB    syncint64.Histogram
 	platformFaults     syncint64.Counter
@@ -55,7 +55,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 
 	meter := lp.sdk.Meter("lambda_function")
 
-	lp.duration, err = meter.SyncFloat64().Histogram(
+	lp.duration, err = meter.SyncInt64().Histogram(
 		"lambda_duration_ms",
 		instrument.WithUnit(unit.Milliseconds),
 		instrument.WithDescription("the amount of time that your function's handler method spent processing the event"),
@@ -63,7 +63,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	if err != nil {
 		return err
 	}
-	lp.billedDuration, err = meter.SyncFloat64().Histogram(
+	lp.billedDuration, err = meter.SyncInt64().Histogram(
 		"lambda_duration_billed_ms",
 		instrument.WithUnit(unit.Milliseconds),
 		instrument.WithDescription("the amount of time billed for the invocation"),
@@ -71,7 +71,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	if err != nil {
 		return err
 	}
-	lp.initDuration, err = meter.SyncFloat64().Histogram(
+	lp.initDuration, err = meter.SyncInt64().Histogram(
 		"lambda_duration_init_ms",
 		instrument.WithUnit(unit.Milliseconds),
 		instrument.WithDescription("for the first request served, the amount of time it took the runtime to load the function and run code outside of the handler method"),
@@ -135,9 +135,9 @@ func (lp *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
 	var err error
 	switch record := msg.Record.(type) {
 	case logsapi.RecordPlatformReport:
-		lp.duration.Record(ctx, record.Metrics.DurationMs)
-		lp.billedDuration.Record(ctx, record.Metrics.BilledDurationMs)
-		lp.initDuration.Record(ctx, record.Metrics.InitDurationMs)
+		lp.duration.Record(ctx, time.Duration(record.Metrics.Duration).Milliseconds())
+		lp.billedDuration.Record(ctx, time.Duration(record.Metrics.BilledDuration).Milliseconds())
+		lp.initDuration.Record(ctx, time.Duration(record.Metrics.InitDuration).Milliseconds())
 		lp.memorySizeMB.Record(ctx, int64(record.Metrics.MemorySizeMB*1024*1024))
 		lp.maxMemoryUsedMB.Record(ctx, int64(record.Metrics.MaxMemoryUsedMB*1024*1024))
 	case logsapi.RecordPlatformFault:
