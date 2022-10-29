@@ -1,6 +1,9 @@
 package extapi
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
 // Defined runtime environment variables.
 // Lambda runtimes set several environment variables during initialization.
@@ -25,8 +28,11 @@ func EnvAWSLambdaFunctionName() string {
 }
 
 // EnvAWSLambdaFunctionMemorySizeMB returns the amount of memory available to the function in MB.
-func EnvAWSLambdaFunctionMemorySizeMB() string {
-	return os.Getenv("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")
+func EnvAWSLambdaFunctionMemorySizeMB() int {
+	s := os.Getenv("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")
+	n, _ := strconv.Atoi(s)
+
+	return n
 }
 
 // EnvAWSLambdaFunctionVersion returns the version of the function being executed.
