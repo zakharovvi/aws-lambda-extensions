@@ -8,6 +8,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: example-logs-subscriber
+      Description: This example demonstrates how to use Lambda Logs API and deploy extension as a separate binary in a lambda layer.
       CodeUri: function
       Handler: main
       Runtime: go1.x

@@ -8,6 +8,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: example-logs-opentelemetry-metrics
+      Description: This example demonstrates how to use Lambda Logs API, parse record fields, and convert them into OpenTelemetry metrics.
       CodeUri: function
       Handler: main
       Runtime: go1.x
