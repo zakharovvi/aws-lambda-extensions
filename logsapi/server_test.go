@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -70,6 +69,7 @@ func (lp *testLogProcessor) Shutdown(ctx context.Context, reason extapi.Shutdown
 }
 
 type lambdaAPIMock struct {
+	t                   *testing.T
 	wantDestinationURI  string
 	logsRequests        [][]byte
 	wantLogsResponses   []int
@@ -83,62 +83,54 @@ type lambdaAPIMock struct {
 func (h *lambdaAPIMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/2020-01-01/extension/register":
-		if h.registerCalled {
-			panic("register has already been called")
-		}
+		require.Falsef(h.t, h.registerCalled, "extension/register has already been called")
 		h.registerCalled = true
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
 		if _, err := w.Write(respRegister); err != nil {
-			log.Panic(err)
+			require.NoError(h.t, err, "extension/register")
 		}
 	case "/2020-01-01/extension/event/next":
 		for _, logs := range h.logsRequests {
 			req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, h.wantDestinationURI, bytes.NewReader(logs))
-			if err != nil {
-				log.Panic(err)
-			}
+			require.NoError(h.t, err)
+
 			resp, err := http.DefaultClient.Do(req)
+			// request context can be cancelled for test cases with injected failures
 			if err != nil {
-				log.Panic(err)
+				h.t.Log(err)
+
+				break
 			}
-			if resp.StatusCode != h.wantLogsResponses[0] {
-				log.Panicf("received %d http status code\n", resp.StatusCode)
-			}
+
+			require.Equal(h.t, h.wantLogsResponses[0], resp.StatusCode)
 			h.wantLogsResponses = h.wantLogsResponses[1:]
-			if err := resp.Body.Close(); err != nil {
-				log.Panic(err)
-			}
+
+			require.NoError(h.t, resp.Body.Close())
 		}
 		if _, err := w.Write(respShutdown); err != nil {
-			log.Panic(err)
+			require.NoError(h.t, err, "extension/event/next")
 		}
 
 	case "/2020-01-01/extension/init/error":
-		if h.initErrorCalled {
-			panic("/init/error has already been called")
-		}
+		require.Falsef(h.t, h.initErrorCalled, "extension/init/error has already been called")
 		h.initErrorCalled = true
 		if _, err := w.Write(respError); err != nil {
-			log.Panic(err)
+			require.NoError(h.t, err, "extension/init/error")
 		}
 	case "/2020-01-01/extension/exit/error":
-		if h.exitErrorCalled {
-			panic("exit/error has already been called")
-		}
+		require.Falsef(h.t, h.exitErrorCalled, "extension/exit/error has already been called")
 		h.exitErrorCalled = true
 		if _, err := w.Write(respError); err != nil {
-			log.Panic(err)
+			require.NoError(h.t, err, "extension/exit/error")
 		}
 	case "/2020-08-15/logs":
+		require.Falsef(h.t, h.logsSubscribeCalled, "logs has already been called")
 		h.logsSubscribeCalled = true
 
 		subscription := extapi.LogsSubscribeRequest{}
-		if err := json.NewDecoder(r.Body).Decode(&subscription); err != nil {
-			log.Panic(err)
-		}
-		if subscription.Destination.URI != h.wantDestinationURI {
-			log.Panicf("want desination uri %s, got %s", h.wantDestinationURI, subscription.Destination.URI)
-		}
+		require.NoError(h.t, json.NewDecoder(r.Body).Decode(&subscription))
+
+		require.Equal(h.t, h.wantDestinationURI, subscription.Destination.URI)
 
 		status := http.StatusOK
 		if h.logsSubscribeStatus != 0 {
@@ -146,7 +138,8 @@ func (h *lambdaAPIMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(status)
 	default:
-		log.Panicf("unexpected request: %s", r.URL)
+		require.Failf(h.t, "unknown url called: %s", r.URL.String())
+		http.NotFound(w, r)
 	}
 }
 
@@ -340,6 +333,7 @@ func TestRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.apiMock.t = t
 			tt.apiMock.wantDestinationURI = "http://" + tt.destinationAddr
 			server := httptest.NewServer(tt.apiMock)
 			defer server.Close()

@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zakharovvi/aws-lambda-extensions/extapi"
 	"github.com/zakharovvi/aws-lambda-extensions/logsapi"
@@ -103,9 +102,9 @@ func TestDecodeLogs(t *testing.T) {
 			r := io.NopCloser(strings.NewReader(tt.response))
 			err := logsapi.DecodeLogs(context.Background(), r, logsCh)
 			if tt.wantErrorContains == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.ErrorContains(t, err, tt.wantErrorContains)
+				require.ErrorContains(t, err, tt.wantErrorContains)
 			}
 			close(logsCh)
 
@@ -113,12 +112,12 @@ func TestDecodeLogs(t *testing.T) {
 			for log := range logsCh {
 				logs = append(logs, log)
 			}
-			assert.Equal(t, tt.want, logs)
+			require.Equal(t, tt.want, logs)
 
 			// check that body was drained and can be reused
 			n, err := io.Copy(io.Discard, r)
-			assert.NoError(t, err)
-			assert.Zero(t, n)
+			require.NoError(t, err)
+			require.Zero(t, n)
 		})
 	}
 }
@@ -380,10 +379,10 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 			require.NoError(t, err)
 
 			log := <-logs
-			assert.Equal(t, tt.want.Time, log.Time)
-			assert.Equal(t, tt.want.LogType, log.LogType)
-			assert.JSONEq(t, string(tt.want.RawRecord), string(log.RawRecord))
-			assert.Equal(t, tt.want.Record, log.Record)
+			require.Equal(t, tt.want.Time, log.Time)
+			require.Equal(t, tt.want.LogType, log.LogType)
+			require.JSONEq(t, string(tt.want.RawRecord), string(log.RawRecord))
+			require.Equal(t, tt.want.Record, log.Record)
 		})
 	}
 }

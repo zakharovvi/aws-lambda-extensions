@@ -3,7 +3,6 @@ package extapi_test
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +12,7 @@ import (
 )
 
 type testExtension struct {
+	t                     *testing.T
 	events                []*extapi.NextEventResponse
 	handleInvokeEventErrs []error
 	initErr               error
@@ -21,38 +21,35 @@ type testExtension struct {
 	shutdownCalled        bool
 }
 
-func (te *testExtension) Init(ctx context.Context, client *extapi.Client) error {
-	if te.initCalled {
-		panic("Init has already been called")
-	}
-	te.initCalled = true
+func (ext *testExtension) Init(ctx context.Context, client *extapi.Client) error {
+	require.Falsef(ext.t, ext.initCalled, "Init has already been called")
+	ext.initCalled = true
 
-	return te.initErr
+	return ext.initErr
 }
 
-func (te *testExtension) HandleInvokeEvent(ctx context.Context, event *extapi.NextEventResponse) error {
-	te.events = append(te.events, event)
+func (ext *testExtension) HandleInvokeEvent(ctx context.Context, event *extapi.NextEventResponse) error {
+	ext.events = append(ext.events, event)
 
-	res := te.handleInvokeEventErrs[0]
-	te.handleInvokeEventErrs = te.handleInvokeEventErrs[1:]
+	res := ext.handleInvokeEventErrs[0]
+	ext.handleInvokeEventErrs = ext.handleInvokeEventErrs[1:]
 
 	return res
 }
 
-func (te *testExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
-	if te.shutdownCalled {
-		panic("Shutdown has already been called")
-	}
-	te.shutdownCalled = true
+func (ext *testExtension) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+	require.Falsef(ext.t, ext.shutdownCalled, "Shutdown has already been called")
+	ext.shutdownCalled = true
 
-	return te.shutdownErr
+	return ext.shutdownErr
 }
 
-func (te *testExtension) Err() <-chan error {
+func (ext *testExtension) Err() <-chan error {
 	return nil
 }
 
 type lambdaAPIMock struct {
+	t               *testing.T
 	events          [][]byte
 	registerCalled  bool
 	initErrorCalled bool
@@ -62,13 +59,11 @@ type lambdaAPIMock struct {
 func (h *lambdaAPIMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/2020-01-01/extension/register":
-		if h.registerCalled {
-			panic("register has already been called")
-		}
+		require.Falsef(h.t, h.registerCalled, "extension/register has already been called")
 		h.registerCalled = true
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
 		if _, err := w.Write(respRegister); err != nil {
-			log.Panic(err)
+			require.NoError(h.t, err, "extension/register")
 		}
 	case "/2020-01-01/extension/event/next":
 		if len(h.events) == 0 {
@@ -77,26 +72,23 @@ func (h *lambdaAPIMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			e := h.events[0]
 			h.events = h.events[1:]
 			if _, err := w.Write(e); err != nil {
-				log.Panic(err)
+				require.NoError(h.t, err, "extension/event/next")
 			}
 		}
 	case "/2020-01-01/extension/init/error":
-		if h.initErrorCalled {
-			panic("/init/error has already been called")
-		}
+		require.Falsef(h.t, h.initErrorCalled, "extension/init/error has already been called")
 		h.initErrorCalled = true
 		if _, err := w.Write(respError); err != nil {
-			log.Panic(err)
+			require.NoError(h.t, err, "extension/init/error")
 		}
 	case "/2020-01-01/extension/exit/error":
-		if h.exitErrorCalled {
-			panic("exit/error has already been called")
-		}
+		require.Falsef(h.t, h.exitErrorCalled, "extension/exit/error has already been called")
 		h.exitErrorCalled = true
 		if _, err := w.Write(respError); err != nil {
-			log.Panic(err)
+			require.NoError(h.t, err, "extension/exit/error")
 		}
 	default:
+		require.Failf(h.t, "unknown url called: %s", r.URL.String())
 		http.NotFound(w, r)
 	}
 }
@@ -170,6 +162,9 @@ func TestRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.handler.t = t
+			tt.ext.t = t
+
 			server := httptest.NewServer(tt.handler)
 			defer server.Close()
 			t.Setenv("AWS_LAMBDA_RUNTIME_API", server.Listener.Addr().String())

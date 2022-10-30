@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zakharovvi/aws-lambda-extensions/extapi"
 )
@@ -23,30 +22,27 @@ func TestSubscribe(t *testing.T) {
 	mux.HandleFunc("/2020-08-15/logs", func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
-		assert.Equal(t, http.MethodPut, r.Method)
-		assert.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+		require.Equal(t, http.MethodPut, r.Method)
+		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
 
 		req, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		subscribeReq := &extapi.LogsSubscribeRequest{}
-		assert.NoError(t, json.Unmarshal(req, subscribeReq))
-		assert.Equal(t, logReceiverURL, subscribeReq.Destination.URI)
-		assert.Equal(
+		require.NoError(t, json.Unmarshal(req, subscribeReq))
+		require.Equal(t, logReceiverURL, subscribeReq.Destination.URI)
+		require.Equal(
 			t,
 			[]extapi.LogSubscriptionType{extapi.LogSubscriptionTypePlatform, extapi.LogSubscriptionTypeFunction},
 			subscribeReq.LogTypes,
 		)
 
 		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte("OK")); err != nil {
-			t.Fatal(err)
-		}
+		_, err = w.Write([]byte("OK"))
+		require.NoError(t, err)
 	})
 
 	subscribeReq := extapi.NewLogsSubscribeRequest(logReceiverURL, nil, nil)
 	err = client.LogsSubscribe(context.Background(), subscribeReq)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
