@@ -1,0 +1,12 @@
+export GOWORK := $(shell pwd)/../../go.work
+
+build:
+	sam build
+
+validate:
+	aws-vault exec default -- sam validate
+
+watch:
+	aws-vault exec default -- sam sync --stack-name logs-subscriber --watch
+
+.PHONY: build validate watch
