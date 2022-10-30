@@ -1,4 +1,4 @@
-module github.com/zakharovvi/aws-lambda-extensions/examples/logs-subscriber/function
+module github.com/zakharovvi/aws-lambda-extensions/examples/logs-opentelemetry-metrics/function
 
 go 1.18
 

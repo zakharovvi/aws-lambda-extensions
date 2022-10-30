@@ -9,6 +9,7 @@ This example demonstrates how to use Lambda Logs API, parse record fields, and c
 * [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install-mac.html)
   installed
 * `go` installed
+* AWS credentials configured
 
 ### Steps
 

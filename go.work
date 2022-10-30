@@ -1,0 +1,13 @@
+go 1.18
+
+use (
+	.
+	./examples/internal-extension
+	./examples/logs-opentelemetry-metrics/extension
+	./examples/logs-opentelemetry-metrics/function
+	./examples/logs-subscriber/extension
+	./examples/logs-subscriber/function
+	./tests/rie
+)
+
+replace github.com/zakharovvi/aws-lambda-extensions v1.0.0 => ./
