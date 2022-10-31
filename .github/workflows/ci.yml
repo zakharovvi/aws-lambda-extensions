@@ -55,6 +55,8 @@ jobs:
 
   examples-sam:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     strategy:
       matrix:
         path:
@@ -67,8 +69,14 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version-file: go.mod
-      - name: sam build
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::008697144133:role/github-actions-zakharovvi-aws-lambda-extensions
+          aws-region: eu-west-1
+      - name: sam
         env:
           GOWORK: ${{ github.workspace }}/go.work
         working-directory: ${{ matrix.path }}
-        run: sam build
+        run: |
+          sam build
+          sam validate
