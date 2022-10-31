@@ -69,7 +69,7 @@ jobs:
           go-version-file: go.mod
       - name: sam build
         env:
-          GOWORK: ${GITHUB_WORKSPACE}/go.work
+          GOWORK: ${{ env.GITHUB_WORKSPACE }}/go.work
         run: |
           cd ${{ matrix.path }}
           sam build
