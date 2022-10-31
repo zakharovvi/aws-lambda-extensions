@@ -21,6 +21,7 @@ jobs:
         run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+
   golangci-lint:
     runs-on: ubuntu-latest
     steps:
@@ -33,6 +34,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           args: --verbose
+
   test-runtime-interface-emulator:
     runs-on: ubuntu-latest
     steps:
@@ -50,3 +52,21 @@ jobs:
           cd ./tests/rie
           go build -v ./...
           go test -v ./...
+
+  examples-sam:
+    strategy:
+      matrix:
+        path:
+          - ./examples/internal-extension
+          - ./examples/logs-opentelemetry-metrics
+          - ./examples/logs-subscriber
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aws-actions/setup-sam@v2
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: ${{ matrix.path }}/go.mod
+      - name: sam build
+        run: |
+          cd ${{ matrix.path }}
+          sam build
