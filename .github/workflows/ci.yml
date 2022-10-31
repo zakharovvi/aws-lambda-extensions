@@ -61,8 +61,6 @@ jobs:
           - ./examples/internal-extension
           - ./examples/logs-opentelemetry-metrics
           - ./examples/logs-subscriber
-    env:
-      GOWORK: ${GITHUB_WORKSPACE}/go.work
     steps:
       - uses: actions/checkout@v3
       - uses: aws-actions/setup-sam@v2
@@ -70,6 +68,8 @@ jobs:
         with:
           go-version-file: go.mod
       - name: sam build
+        env:
+          GOWORK: ${GITHUB_WORKSPACE}/go.work
         run: |
           cd ${{ matrix.path }}
           sam build
