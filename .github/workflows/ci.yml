@@ -54,6 +54,7 @@ jobs:
           go test -v ./...
 
   examples-sam:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         path:
