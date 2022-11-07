@@ -8,7 +8,7 @@ use (
 	./examples/logs-subscriber/extension
 	./examples/logs-subscriber/function
 	./tests/rie
-	./tests/lambda/cdk
+	./cdk
 )
 
 replace github.com/zakharovvi/aws-lambda-extensions v1.0.0 => ./
