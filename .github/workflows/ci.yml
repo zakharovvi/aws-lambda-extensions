@@ -50,7 +50,6 @@ jobs:
       - name: Run Test
         working-directory: ./tests/rie
         run: |
-          cd ./tests/rie
           go build -v ./...
           go test -v ./...
 
@@ -85,8 +84,9 @@ jobs:
   cdk:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - name: cdk synth
         uses: youyo/aws-cdk-github-actions@v2
-        working-directory: cdk
         with:
           cdk_subcommand: synth
+          working_dir: cdk
