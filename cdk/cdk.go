@@ -31,6 +31,11 @@ func NewCdkStack(scope constructs.Construct, id string, props awscdk.StackProps)
 	policies := &[]awsiam.IManagedPolicy{
 		awsiam.NewManagedPolicy(stack, jsii.String("sam-deploy-policy"), &awsiam.ManagedPolicyProps{
 			Statements: &[]awsiam.PolicyStatement{
+				awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{ // required for "sam validate"
+					Effect:    awsiam.Effect_ALLOW,
+					Actions:   jsii.Strings("iam:ListPolicies"),
+					Resources: jsii.Strings("*"),
+				}),
 				awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
 					Effect:    awsiam.Effect_ALLOW,
 					Actions:   jsii.Strings("s3:GetObject", "s3:PutObject"),
