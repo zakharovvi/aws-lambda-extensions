@@ -48,6 +48,7 @@ jobs:
           curl -Lo /tmp/aws-lambda-rie https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/latest/download/aws-lambda-rie
           chmod +x /tmp/aws-lambda-rie
       - name: Run Test
+        working-directory: ./tests/rie
         run: |
           cd ./tests/rie
           go build -v ./...
@@ -86,6 +87,6 @@ jobs:
     steps:
       - name: cdk synth
         uses: youyo/aws-cdk-github-actions@v2
+        working-directory: cdk
         with:
           cdk_subcommand: synth
-          working_dir: cdk
