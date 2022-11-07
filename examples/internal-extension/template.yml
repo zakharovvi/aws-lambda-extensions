@@ -3,8 +3,13 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Sample internal-extension demonstrates how to run an extension in the same binary with a lambda function.
 
+Globals:
+  Function:
+    Tags:
+      project: "zakharovvi/aws-lambda-extensions"
+
 Resources:
-  ExampleInternalExtensionFunction:
+  ExampleFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: example-internal-extension
@@ -16,6 +21,6 @@ Resources:
         - x86_64
 
 Outputs:
-  ExampleInternalExtensionFunction:
+  ExampleFunction:
     Description: "Lambda Function ARN"
-    Value: !GetAtt ExampleInternalExtensionFunction.Arn
+    Value: !GetAtt ExampleFunction.Arn

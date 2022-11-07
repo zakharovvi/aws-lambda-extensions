@@ -1,0 +1,12 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "example-logs-subscriber"
+s3_bucket = "ci-aws-lambda-extensions-samreleasesbucketff04fc4-fehwm0914oha"
+s3_prefix = "example-logs-subscriber"
+region = "eu-west-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_NAMED_IAM"
+disable_rollback = true
+image_repositories = []

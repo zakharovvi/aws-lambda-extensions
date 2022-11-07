@@ -71,7 +71,7 @@ jobs:
           go-version-file: go.mod
       - uses: aws-actions/configure-aws-credentials@v1
         with:
-          role-to-assume: arn:aws:iam::008697144133:role/github-actions-zakharovvi-aws-lambda-extensions
+          role-to-assume: arn:aws:iam::008697144133:role/ci-aws-lambda-extensions-githubactionsrole82740668-W46JYWTVLGNW
           aws-region: eu-west-1
       - name: sam
         env:
@@ -80,3 +80,12 @@ jobs:
         run: |
           sam build
           sam validate
+
+  cdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: cdk synth
+        uses: youyo/aws-cdk-github-actions@v2
+        with:
+          cdk_subcommand: synth
+          working_dir: cdk

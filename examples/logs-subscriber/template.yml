@@ -3,6 +3,11 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   This example demonstrates how to use Lambda Logs API and deploy extension as a separate binary in a lambda layer.
 
+Globals:
+  Function:
+    Tags:
+      project: "zakharovvi/aws-lambda-extensions"
+
 Resources:
   ExampleFunction:
     Type: AWS::Serverless::Function
@@ -16,6 +21,8 @@ Resources:
         - x86_64
       Layers:
         - !Ref ExtensionLayer
+      Tags:
+        project: zakharovvi/aws-lambda-extensions
   ExtensionLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -29,6 +36,6 @@ Resources:
       BuildMethod: makefile
 
 Outputs:
-  ExampleLogsSubscriberFunction:
+  ExampleFunction:
     Description: "Lambda Function ARN"
     Value: !GetAtt ExampleFunction.Arn
