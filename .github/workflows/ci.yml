@@ -18,7 +18,7 @@ jobs:
       - name: Build
         run: go build -v ./...
       - name: Test
-        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
 
@@ -51,18 +51,12 @@ jobs:
         working-directory: ./tests/rie
         run: |
           go build -v ./...
-          go test -v ./...
+          go test ./...
 
-  examples-sam:
+  test-examples-lambda-invoke:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-    strategy:
-      matrix:
-        path:
-          - ./examples/internal-extension
-          - ./examples/logs-opentelemetry-metrics
-          - ./examples/logs-subscriber
     steps:
       - uses: actions/checkout@v3
       - uses: aws-actions/setup-sam@v2
@@ -73,13 +67,10 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::008697144133:role/ci-aws-lambda-extensions-githubactionsrole82740668-W46JYWTVLGNW
           aws-region: eu-west-1
-      - name: sam
-        env:
-          GOWORK: ${{ github.workspace }}/go.work
-        working-directory: ${{ matrix.path }}
+      - name: Run Test
+        working-directory: ./tests/lambda
         run: |
-          sam build
-          sam validate
+          go test ./...
 
   cdk:
     runs-on: ubuntu-latest

@@ -7,9 +7,9 @@ validate:
 	aws-vault exec default -- sam validate
 
 sync:
-	aws-vault exec default -- sam sync --stack-name logs-subscriber
+	aws-vault exec default -- sam sync
 
 watch:
-	aws-vault exec default -- sam sync --stack-name logs-subscriber --watch
+	aws-vault exec default -- sam sync --watch
 
 .PHONY: build validate sync watch
