@@ -67,6 +67,10 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::008697144133:role/ci-aws-lambda-extensions-githubactionsrole82740668-W46JYWTVLGNW
           aws-region: eu-west-1
+      - uses: actions/cache@v3
+        with:
+          path: ./examples/*/.aws-sam
+          key: constant
       - name: Run Test
         working-directory: ./tests/lambda
         run: |
