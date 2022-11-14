@@ -68,6 +68,27 @@ func TestRegister(t *testing.T) {
 	require.Equal(t, testIdentifier, client.ExtensionID())
 }
 
+func TestLambdaAPIError(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/2020-01-01/extension/register", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		w.WriteHeader(http.StatusBadRequest)
+		if _, err := w.Write([]byte(`{"errorType": "ValidationError", "errorMessage": "URI port is not provided; types should not be empty"}`)); err != nil {
+			t.Fatal(err)
+		}
+	})
+	server := httptest.NewServer(mux)
+
+	t.Setenv("AWS_LAMBDA_RUNTIME_API", server.Listener.Addr().String())
+	_, err := extapi.Register(context.Background())
+	require.ErrorIs(t, err, extapi.LambdaAPIError{
+		Type:           "ValidationError",
+		Message:        "URI port is not provided; types should not be empty",
+		HTTPStatusCode: http.StatusBadRequest,
+	})
+}
+
 func TestNextEvent_Invoke(t *testing.T) {
 	client, server, mux, err := register(t)
 	require.NoError(t, err)
@@ -138,8 +159,8 @@ func TestInitError(t *testing.T) {
 		}
 		require.Equal(t, errTest.Error(), string(req))
 
-		w.WriteHeader(http.StatusAccepted)
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		w.WriteHeader(http.StatusAccepted)
 		if _, err := w.Write(respError); err != nil {
 			t.Fatal(err)
 		}
@@ -183,8 +204,8 @@ func TestExitError(t *testing.T) {
 		}
 		require.Equal(t, errTest.Error(), string(req))
 
-		w.WriteHeader(http.StatusAccepted)
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		w.WriteHeader(http.StatusAccepted)
 		if _, err := w.Write(respError); err != nil {
 			t.Fatal(err)
 		}

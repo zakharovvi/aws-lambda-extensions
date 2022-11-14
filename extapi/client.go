@@ -84,9 +84,19 @@ const (
 	// idHeader is a uuid that is required on subsequent requests.
 	idHeader        = "Lambda-Extension-Identifier"
 	errorTypeHeader = "Lambda-Extension-Function-Error-Type"
-	// acceptFeatureHeader is used to specify optional Extensions features during registration
+	// acceptFeatureHeader is used to specify optional Extensions features during registration.
 	acceptFeatureHeader = "Lambda-Extension-Accept-Feature"
 )
+
+type LambdaAPIError struct {
+	Type           string `json:"errorType"`
+	Message        string `json:"errorMessage"`
+	HTTPStatusCode int    `json:"-"`
+}
+
+func (e LambdaAPIError) Error() string {
+	return fmt.Sprintf("Lambda API http_status_code=%d type=%s, message=%s", e.HTTPStatusCode, e.Type, e.Message)
+}
 
 type options struct {
 	extensionName       string
@@ -338,7 +348,13 @@ func (c *Client) doRequest(req *http.Request, wantStatus int, out interface{}) (
 		return nil, fmt.Errorf("could not read http response body: %w", err)
 	}
 	if resp.StatusCode != wantStatus {
-		return nil, fmt.Errorf("http request failed with status %s and body: %s", resp.Status, body)
+		apiErr := LambdaAPIError{}
+		apiErr.HTTPStatusCode = resp.StatusCode
+		if err := json.Unmarshal(body, &apiErr); err != nil {
+			return nil, fmt.Errorf("http request failed with status %s and body: %s", resp.Status, body)
+		}
+
+		return nil, apiErr
 	}
 
 	if out != nil {
