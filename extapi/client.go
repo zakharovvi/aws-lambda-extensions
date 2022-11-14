@@ -48,6 +48,7 @@ type RegisterResponse struct {
 	FunctionName    string `json:"functionName"`
 	FunctionVersion string `json:"functionVersion"`
 	Handler         string `json:"handler"`
+	AccountID       string `json:"accountId"`
 }
 
 // NextEventResponse is the response for /event/next.
@@ -83,6 +84,8 @@ const (
 	// idHeader is a uuid that is required on subsequent requests.
 	idHeader        = "Lambda-Extension-Identifier"
 	errorTypeHeader = "Lambda-Extension-Function-Error-Type"
+	// acceptFeatureHeader is used to specify optional Extensions features during registration
+	acceptFeatureHeader = "Lambda-Extension-Accept-Feature"
 )
 
 type options struct {
@@ -172,6 +175,11 @@ func (c *Client) Handler() string {
 	return c.registerResp.Handler
 }
 
+// AccountID returns the account ID associated with the Lambda function that you're registering the extension for.
+func (c *Client) AccountID() string {
+	return c.registerResp.AccountID
+}
+
 func (c *Client) ExtensionID() string {
 	return c.extensionID
 }
@@ -233,6 +241,7 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 		return nil, fmt.Errorf("could not create register http request: %w", err)
 	}
 	req.Header.Set(nameHeader, extensionName)
+	req.Header.Set(acceptFeatureHeader, "accountId")
 	req.Header.Set("Content-Type", "application/json")
 
 	registerResp := &RegisterResponse{}

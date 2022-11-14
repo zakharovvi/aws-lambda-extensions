@@ -45,6 +45,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 		metric.WithResource(resource.NewSchemaless(
 			semconv.CloudProviderAWS,
 			semconv.CloudPlatformAWSLambda,
+			semconv.CloudAccountIDKey.String(client.AccountID()),
 			semconv.CloudRegionKey.String(extapi.EnvAWSRegion()),
 			semconv.FaaSNameKey.String(client.FunctionName()),
 			semconv.FaaSVersionKey.String(client.FunctionVersion()),

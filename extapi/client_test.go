@@ -24,7 +24,8 @@ var (
 		{
 			"functionName": "helloWorld",
 			"functionVersion": "$LATEST",
-			"handler": "lambda_function.lambda_handler"
+			"handler": "lambda_function.lambda_handler",
+			"accountId": "123456789012"
 		}
 	`)
 
@@ -63,6 +64,7 @@ func TestRegister(t *testing.T) {
 	require.Equal(t, "helloWorld", client.FunctionName())
 	require.Equal(t, "$LATEST", client.FunctionVersion())
 	require.Equal(t, "lambda_function.lambda_handler", client.Handler())
+	require.Equal(t, "123456789012", client.AccountID())
 	require.Equal(t, testIdentifier, client.ExtensionID())
 }
 
