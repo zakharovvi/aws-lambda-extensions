@@ -252,7 +252,6 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 	}
 	req.Header.Set(nameHeader, extensionName)
 	req.Header.Set(acceptFeatureHeader, "accountId")
-	req.Header.Set("Content-Type", "application/json")
 
 	registerResp := &RegisterResponse{}
 	resp, err := c.doRequest(req, http.StatusOK, registerResp)
@@ -283,7 +282,6 @@ func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 
 		return nil, err
 	}
-	req.Header.Set(idHeader, c.extensionID)
 
 	nextResp := &NextEventResponse{}
 	if _, err := c.doRequest(req, http.StatusOK, nextResp); err != nil {
@@ -317,9 +315,7 @@ func (c *Client) reportError(ctx context.Context, action, errorType string, err 
 
 		return nil, err
 	}
-	req.Header.Set(idHeader, c.extensionID)
 	req.Header.Set(errorTypeHeader, errorType)
-	req.Header.Set("Content-Type", "application/json")
 
 	errorResp := &ErrorResponse{}
 	if _, err := c.doRequest(req, http.StatusAccepted, errorResp); err != nil {
@@ -334,6 +330,13 @@ func (c *Client) reportError(ctx context.Context, action, errorType string, err 
 }
 
 func (c *Client) doRequest(req *http.Request, wantStatus int, out interface{}) (*http.Response, error) {
+	if req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	if c.extensionID != "" {
+		req.Header.Set(idHeader, c.extensionID)
+	}
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http request failed: %w", err)

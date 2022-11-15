@@ -98,6 +98,7 @@ func TestNextEvent_Invoke(t *testing.T) {
 
 		require.Equal(t, http.MethodGet, r.Method)
 		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+		require.Empty(t, r.Header.Get("Content-Type"))
 
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
 		if _, err := w.Write(respNextEvent); err != nil {
@@ -127,6 +128,7 @@ func TestNextEvent_Shutdown(t *testing.T) {
 
 		require.Equal(t, http.MethodGet, r.Method)
 		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+		require.Empty(t, r.Header.Get("Content-Type"))
 
 		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
 		if _, err := w.Write(respNextEvent); err != nil {
@@ -150,6 +152,7 @@ func TestInitError(t *testing.T) {
 		defer r.Body.Close()
 
 		require.Equal(t, http.MethodPost, r.Method)
+		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
 		require.Equal(t, testErrorType, r.Header.Get("Lambda-Extension-Function-Error-Type"))
 
@@ -195,6 +198,7 @@ func TestExitError(t *testing.T) {
 		defer r.Body.Close()
 
 		require.Equal(t, http.MethodPost, r.Method)
+		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
 		require.Equal(t, testErrorType, r.Header.Get("Lambda-Extension-Function-Error-Type"))
 
@@ -239,7 +243,9 @@ func register(t *testing.T) (*extapi.Client, *httptest.Server, *http.ServeMux, e
 		defer r.Body.Close()
 
 		require.Equal(t, http.MethodPost, r.Method)
+		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		require.Equal(t, filepath.Base(os.Args[0]), r.Header.Get("Lambda-Extension-Name"))
+		require.Empty(t, r.Header.Get("Lambda-Extension-Identifier"))
 
 		req, err := io.ReadAll(r.Body)
 		if err != nil {

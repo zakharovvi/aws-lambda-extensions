@@ -109,8 +109,6 @@ func (c *Client) LogsSubscribe(ctx context.Context, subscribeReq *LogsSubscribeR
 
 		return err
 	}
-	req.Header.Set(idHeader, c.extensionID)
-	req.Header.Set("Content-Type", "application/json")
 
 	if _, err := c.doRequest(req, http.StatusOK, nil); err != nil {
 		err = fmt.Errorf("logs subscribe http call failed: %w", err)

@@ -23,6 +23,7 @@ func TestSubscribe(t *testing.T) {
 		defer r.Body.Close()
 
 		require.Equal(t, http.MethodPut, r.Method)
+		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
 
 		req, err := io.ReadAll(r.Body)
