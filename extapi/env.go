@@ -15,8 +15,8 @@ import (
 // https://docs.aws.amazon.com/lambda/latest/dg/runtimes-extensions-api.html#runtimes-extensions-registration-api-e
 
 // EnvXAmznTraceID returns X-Ray tracing header.
-func EnvXAmznTraceID() string {
-	return os.Getenv("_X_AMZN_TRACE_ID")
+func EnvXAmznTraceID() lambdaext.TracingValue {
+	return lambdaext.TracingValue(os.Getenv("_X_AMZN_TRACE_ID"))
 }
 
 // EnvAWSRegion returns the AWS Region where the Lambda function is executed.

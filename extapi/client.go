@@ -70,8 +70,8 @@ type NextEventResponse struct {
 
 // Tracing is part of the response for /event/next.
 type Tracing struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
+	Type  lambdaext.TracingType  `json:"type"`
+	Value lambdaext.TracingValue `json:"value"`
 }
 
 // ErrorResponse is the body of the response for /init/error and /exit/error.
