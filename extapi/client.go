@@ -123,7 +123,7 @@ func WithExtensionName(name lambdaext.ExtensionName) Option {
 type awsLambdaRuntimeAPIOption string
 
 func (o awsLambdaRuntimeAPIOption) apply(opts *options) {
-	opts.extensionName = string(o)
+	opts.awsLambdaRuntimeAPI = string(o)
 }
 
 func WithAWSLambdaRuntimeAPI(api string) Option {

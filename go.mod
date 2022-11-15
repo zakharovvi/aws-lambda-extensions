@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/go-logr/logr v1.2.3
 	github.com/stretchr/testify v1.8.0
+	github.com/tonglil/buflogr v1.0.1
 )
 
 require (

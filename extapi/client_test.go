@@ -1,6 +1,7 @@
 package extapi_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/tonglil/buflogr"
 	lambdaext "github.com/zakharovvi/aws-lambda-extensions"
 	"github.com/zakharovvi/aws-lambda-extensions/extapi"
 )
@@ -56,6 +58,63 @@ var (
 		}
 	`)
 )
+
+type RoundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (fn RoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return fn(req)
+}
+
+func TestOptions(t *testing.T) {
+	extensionName := "test-name"
+
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+	mux.HandleFunc("/2020-01-01/extension/register", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		// default extension name should be ignored as WithExtensionName option was set
+		require.Equal(t, extensionName, r.Header.Get("Lambda-Extension-Name"))
+
+		require.Equal(t, "TestOptions", r.Header.Get("TestOptions"), "WithHTTPClient should be used")
+
+		req, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// WithEventTypes option should be used
+		require.JSONEq(t, `{"events":["INVOKE"]}`, string(req))
+
+		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		if _, err := w.Write(respRegister); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	var buf bytes.Buffer
+	var log = buflogr.NewWithBuffer(&buf)
+
+	// AWS_LAMBDA_RUNTIME_API env variable should be ignored as WithAWSLambdaRuntimeAPI option was set
+	t.Setenv("AWS_LAMBDA_RUNTIME_API", "hostnotfound:80")
+
+	client := &http.Client{
+		Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			req.Header.Set("TestOptions", "TestOptions")
+			return http.DefaultClient.Do(req)
+		}),
+	}
+
+	_, err := extapi.Register(
+		context.Background(),
+		extapi.WithEventTypes([]extapi.EventType{extapi.Invoke}),
+		extapi.WithLogger(log),
+		extapi.WithAWSLambdaRuntimeAPI(server.Listener.Addr().String()),
+		extapi.WithHTTPClient(client),
+		extapi.WithExtensionName(lambdaext.ExtensionName(extensionName)),
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, buf, "provided logger should be used")
+}
 
 func TestRegister(t *testing.T) {
 	client, server, _, err := register(t)
