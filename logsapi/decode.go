@@ -7,6 +7,7 @@ import (
 	"io"
 	"time"
 
+	lambdaext "github.com/zakharovvi/aws-lambda-extensions"
 	"github.com/zakharovvi/aws-lambda-extensions/extapi"
 )
 
@@ -18,7 +19,7 @@ const (
 	LogPlatformStart LogType = "platform.start"
 	// LogPlatformEnd is the invocation end time.
 	LogPlatformEnd LogType = "platform.end"
-	// LogPlatformReport includes metrics about the invocation that the requestId specifies.
+	// LogPlatformReport includes metrics about the invocation that the lambdaext.RequestID specifies.
 	LogPlatformReport LogType = "platform.report"
 	// LogPlatformExtension is generated when an extension registers with the extensions API.
 	LogPlatformExtension LogType = "platform.extension"
@@ -41,27 +42,34 @@ const (
 // Log is a parsed log record from Lambda Logs API.
 // Use type assertion for Log.Record field to access custom fields of current Log.LogType.
 type Log struct {
-	LogType   LogType         `json:"type"`
-	Time      time.Time       `json:"time"`
+	// Type property defines the event type.
+	// The following table describes all possible values.
+	LogType LogType `json:"type"`
+	// Time property defines when the Lambda platform generated the event.
+	// This isn't the same as when the event actually occurred.
+	// The string value of time is a timestamp in ISO 8601 format.
+	Time time.Time `json:"time"`
+	// RawRecord property defines a JSON object that contains the telemetry data.
+	// The schema of this JSON object depends on the type.
 	RawRecord json.RawMessage `json:"record"`
 	Record    any             `json:"-"`
 }
 
 // RecordPlatformStart is the invocation start time.
 type RecordPlatformStart struct {
-	RequestID string `json:"requestId"`
-	Version   string `json:"version,omitempty"`
+	RequestID lambdaext.RequestID `json:"requestId"`
+	Version   string              `json:"version,omitempty"`
 }
 
 // RecordPlatformEnd is the invocation end time.
 type RecordPlatformEnd struct {
-	RequestID string `json:"requestId"`
+	RequestID lambdaext.RequestID `json:"requestId"`
 }
 
-// RecordPlatformReport includes metrics about the invocation that the requestId specifies.
+// RecordPlatformReport includes metrics about the invocation that the lambdaext.RequestID specifies.
 type RecordPlatformReport struct {
-	Metrics   Metrics `json:"metrics"`
-	RequestID string  `json:"requestId"`
+	Metrics   Metrics             `json:"metrics"`
+	RequestID lambdaext.RequestID `json:"requestId"`
 	// Tracing field is included if AWS X-Ray tracing is active, the log includes X-Ray metadata.
 	Tracing extapi.Tracing `json:"tracing,omitempty"`
 }
@@ -115,8 +123,8 @@ type RecordPlatformFault string
 // The extension can use this message to stop all the telemetry collection for this function invocation.
 // Lambda sends the platform.runtimeDone message after the runtime sends the NEXT request when the function invocation completes.
 type RecordPlatformRuntimeDone struct {
-	RequestID string            `json:"requestId"`
-	Status    RuntimeDoneStatus `json:"status"`
+	RequestID lambdaext.RequestID `json:"requestId"`
+	Status    RuntimeDoneStatus   `json:"status"`
 }
 type RuntimeDoneStatus string
 

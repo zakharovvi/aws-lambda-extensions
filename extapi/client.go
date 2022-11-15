@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	lambdaext "github.com/zakharovvi/aws-lambda-extensions"
 )
 
 // EventType represents the type of events received from /event/next.
@@ -58,7 +59,7 @@ type NextEventResponse struct {
 	// The instant that the invocation times out, as epoch milliseconds.
 	DeadlineMs int64 `json:"deadlineMs"`
 	// The AWS Request ID, for INVOKE events.
-	RequestID string `json:"requestId"`
+	RequestID lambdaext.RequestID `json:"requestId"`
 	// The ARN of the function being invoked, for INVOKE events.
 	InvokedFunctionArn string `json:"invokedFunctionArn"`
 	// XRay trace ID, for INVOKE events.
