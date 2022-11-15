@@ -101,7 +101,7 @@ func (e LambdaAPIError) Error() string {
 
 type options struct {
 	extensionName       lambdaext.ExtensionName
-	awsLambdaRuntimeAPI string
+	awsLambdaRuntimeAPI lambdaext.AWSLambdaRuntimeAPI
 	eventTypes          []EventType
 	httpClient          *http.Client
 	log                 logr.Logger
@@ -120,10 +120,10 @@ func WithExtensionName(name lambdaext.ExtensionName) Option {
 	return extensionNameOption(name)
 }
 
-type awsLambdaRuntimeAPIOption string
+type awsLambdaRuntimeAPIOption lambdaext.AWSLambdaRuntimeAPI
 
 func (o awsLambdaRuntimeAPIOption) apply(opts *options) {
-	opts.awsLambdaRuntimeAPI = string(o)
+	opts.awsLambdaRuntimeAPI = lambdaext.AWSLambdaRuntimeAPI(o)
 }
 
 func WithAWSLambdaRuntimeAPI(api string) Option {
@@ -167,11 +167,11 @@ func WithLogger(log logr.Logger) Option {
 // Client is a Low-level Lambda API client.
 // In most situations it's better to use high-level handlers extapi.Run and logsapi.Run.
 type Client struct {
-	runtimeAPI   string
-	httpClient   *http.Client
-	extensionID  string
-	registerResp *RegisterResponse
-	log          logr.Logger
+	awsLambdaRuntimeAPI lambdaext.AWSLambdaRuntimeAPI
+	httpClient          *http.Client
+	extensionID         string
+	registerResp        *RegisterResponse
+	log                 logr.Logger
 }
 
 func (c *Client) FunctionName() string {
@@ -216,9 +216,9 @@ func Register(ctx context.Context, opts ...Option) (*Client, error) {
 	options.log.V(1).Info("using AWS_LAMBDA_RUNTIME_API", "addr", options.awsLambdaRuntimeAPI)
 
 	client := &Client{
-		runtimeAPI: options.awsLambdaRuntimeAPI,
-		httpClient: options.httpClient,
-		log:        options.log,
+		awsLambdaRuntimeAPI: options.awsLambdaRuntimeAPI,
+		httpClient:          options.httpClient,
+		log:                 options.log,
 	}
 	var err error
 	client.registerResp, err = client.register(ctx, options.extensionName, options.eventTypes)
@@ -242,7 +242,7 @@ func (c *Client) register(ctx context.Context, extensionName lambdaext.Extension
 	}
 	c.log.V(1).Info("sending register request", "body", string(body))
 
-	url := fmt.Sprintf("http://%s/2020-01-01/extension/register", c.runtimeAPI)
+	url := fmt.Sprintf("http://%s/2020-01-01/extension/register", c.awsLambdaRuntimeAPI)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("could not create register http request: %w", err)
@@ -271,7 +271,7 @@ func (c *Client) register(ctx context.Context, extensionName lambdaext.Extension
 // the desired behavior to enable long polling of the Extensions API.
 func (c *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 	c.log.V(1).Info("requesting event/next")
-	url := fmt.Sprintf("http://%s/2020-01-01/extension/event/next", c.runtimeAPI)
+	url := fmt.Sprintf("http://%s/2020-01-01/extension/event/next", c.awsLambdaRuntimeAPI)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		err = fmt.Errorf("could not create http request for event/next: %w", err)
@@ -304,7 +304,7 @@ func (c *Client) ExitError(ctx context.Context, errorType string, err error) (*E
 
 func (c *Client) reportError(ctx context.Context, action, errorType string, err error) (*ErrorResponse, error) {
 	c.log.V(1).Info("reporting error", "action", action, "errorType", errorType, "body", err.Error())
-	url := fmt.Sprintf("http://%s/2020-01-01/extension%s", c.runtimeAPI, action)
+	url := fmt.Sprintf("http://%s/2020-01-01/extension%s", c.awsLambdaRuntimeAPI, action)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(err.Error()))
 	if err != nil {
 		err = fmt.Errorf("could not create http request for error reporting %s: %w", action, err)

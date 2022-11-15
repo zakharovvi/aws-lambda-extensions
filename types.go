@@ -1,5 +1,7 @@
 package lambdaext
 
+type AWSLambdaRuntimeAPI string
+
 type RequestID string
 
 type ExtensionName string

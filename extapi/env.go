@@ -48,6 +48,6 @@ func EnvAWSLambdaInitializationType() lambdaext.InitType {
 }
 
 // EnvAWSLambdaRuntimeAPI returns the host and port of the runtime API for custom runtime.
-func EnvAWSLambdaRuntimeAPI() string {
-	return os.Getenv("AWS_LAMBDA_RUNTIME_API")
+func EnvAWSLambdaRuntimeAPI() lambdaext.AWSLambdaRuntimeAPI {
+	return lambdaext.AWSLambdaRuntimeAPI(os.Getenv("AWS_LAMBDA_RUNTIME_API"))
 }

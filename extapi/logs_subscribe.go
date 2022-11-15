@@ -101,7 +101,7 @@ func (c *Client) LogsSubscribe(ctx context.Context, subscribeReq *LogsSubscribeR
 
 		return err
 	}
-	url := fmt.Sprintf("http://%s/2020-08-15/logs", c.runtimeAPI)
+	url := fmt.Sprintf("http://%s/2020-08-15/logs", c.awsLambdaRuntimeAPI)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(body))
 	if err != nil {
 		err = fmt.Errorf("could not logs subscribe http request: %w", err)
