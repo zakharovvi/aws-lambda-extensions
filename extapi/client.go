@@ -100,7 +100,7 @@ func (e LambdaAPIError) Error() string {
 }
 
 type options struct {
-	extensionName       string
+	extensionName       lambdaext.ExtensionName
 	awsLambdaRuntimeAPI string
 	eventTypes          []EventType
 	httpClient          *http.Client
@@ -110,13 +110,13 @@ type Option interface {
 	apply(*options)
 }
 
-type extensionNameOption string
+type extensionNameOption lambdaext.ExtensionName
 
 func (o extensionNameOption) apply(opts *options) {
-	opts.extensionName = string(o)
+	opts.extensionName = lambdaext.ExtensionName(o)
 }
 
-func WithExtensionName(name string) Option {
+func WithExtensionName(name lambdaext.ExtensionName) Option {
 	return extensionNameOption(name)
 }
 
@@ -197,12 +197,12 @@ func (c *Client) ExtensionID() string {
 
 // Register registers the extension with the Lambda Extensions API. This happens
 // during extension Init. Each call must include the list of events in the body
-// and the extension name in the headers.
+// and the lambdaext.ExtensionName in the headers.
 func Register(ctx context.Context, opts ...Option) (*Client, error) {
 	extensionName, _ := os.Executable()
 	extensionName = filepath.Base(extensionName)
 	options := options{
-		extensionName:       extensionName,
+		extensionName:       lambdaext.ExtensionName(extensionName),
 		awsLambdaRuntimeAPI: EnvAWSLambdaRuntimeAPI(),
 		eventTypes:          []EventType{Invoke, Shutdown},
 		httpClient:          http.DefaultClient,
@@ -238,7 +238,7 @@ func Register(ctx context.Context, opts ...Option) (*Client, error) {
 	return client, nil
 }
 
-func (c *Client) register(ctx context.Context, extensionName string, eventTypes []EventType) (*RegisterResponse, error) {
+func (c *Client) register(ctx context.Context, extensionName lambdaext.ExtensionName, eventTypes []EventType) (*RegisterResponse, error) {
 	registerReq := RegisterRequest{eventTypes}
 	body, err := json.Marshal(&registerReq)
 	if err != nil {
@@ -251,7 +251,7 @@ func (c *Client) register(ctx context.Context, extensionName string, eventTypes 
 	if err != nil {
 		return nil, fmt.Errorf("could not create register http request: %w", err)
 	}
-	req.Header.Set(nameHeader, extensionName)
+	req.Header.Set(nameHeader, string(extensionName))
 	req.Header.Set(acceptFeatureHeader, "accountId")
 
 	registerResp := &RegisterResponse{}

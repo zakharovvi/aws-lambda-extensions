@@ -97,14 +97,14 @@ type Metrics struct {
 
 // RecordPlatformExtension is generated when an extension registers with the extensions API.
 type RecordPlatformExtension struct {
-	Events []extapi.EventType `json:"events"`
-	Name   string             `json:"name"`
-	State  string             `json:"state"`
+	Events []extapi.EventType      `json:"events"`
+	Name   lambdaext.ExtensionName `json:"name"`
+	State  string                  `json:"state"`
 }
 
 // RecordPlatformLogsSubscription is generated when an extension subscribes to the logs API.
 type RecordPlatformLogsSubscription struct {
-	Name  string                       `json:"name"`
+	Name  lambdaext.ExtensionName      `json:"name"`
 	State string                       `json:"state"`
 	Types []extapi.LogSubscriptionType `json:"types"`
 }
