@@ -46,10 +46,10 @@ type RegisterRequest struct {
 
 // RegisterResponse is the body of the response for /register.
 type RegisterResponse struct {
-	FunctionName    string `json:"functionName"`
-	FunctionVersion string `json:"functionVersion"`
-	Handler         string `json:"handler"`
-	AccountID       string `json:"accountId"`
+	FunctionName    string                    `json:"functionName"`
+	FunctionVersion lambdaext.FunctionVersion `json:"functionVersion"`
+	Handler         string                    `json:"handler"`
+	AccountID       string                    `json:"accountId"`
 }
 
 // NextEventResponse is the response for /event/next.
@@ -178,7 +178,7 @@ func (c *Client) FunctionName() string {
 	return c.registerResp.FunctionName
 }
 
-func (c *Client) FunctionVersion() string {
+func (c *Client) FunctionVersion() lambdaext.FunctionVersion {
 	return c.registerResp.FunctionVersion
 }
 

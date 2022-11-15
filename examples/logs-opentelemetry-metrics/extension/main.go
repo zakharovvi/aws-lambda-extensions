@@ -48,7 +48,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 			semconv.CloudAccountIDKey.String(client.AccountID()),
 			semconv.CloudRegionKey.String(extapi.EnvAWSRegion()),
 			semconv.FaaSNameKey.String(client.FunctionName()),
-			semconv.FaaSVersionKey.String(client.FunctionVersion()),
+			semconv.FaaSVersionKey.String(string(client.FunctionVersion())),
 			semconv.FaaSMaxMemoryKey.Int(extapi.EnvAWSLambdaFunctionMemorySizeMB()),
 		)),
 		metric.WithReader(metric.NewPeriodicReader(exp)),

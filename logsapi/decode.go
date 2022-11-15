@@ -57,8 +57,8 @@ type Log struct {
 
 // RecordPlatformStart is the invocation start time.
 type RecordPlatformStart struct {
-	RequestID lambdaext.RequestID `json:"requestId"`
-	Version   string              `json:"version,omitempty"`
+	RequestID lambdaext.RequestID       `json:"requestId"`
+	Version   lambdaext.FunctionVersion `json:"version,omitempty"`
 }
 
 // RecordPlatformEnd is the invocation end time.

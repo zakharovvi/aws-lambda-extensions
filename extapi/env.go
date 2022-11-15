@@ -3,6 +3,8 @@ package extapi
 import (
 	"os"
 	"strconv"
+
+	lambdaext "github.com/zakharovvi/aws-lambda-extensions"
 )
 
 // Defined runtime environment variables.
@@ -36,8 +38,8 @@ func EnvAWSLambdaFunctionMemorySizeMB() int {
 }
 
 // EnvAWSLambdaFunctionVersion returns the version of the function being executed.
-func EnvAWSLambdaFunctionVersion() string {
-	return os.Getenv("AWS_LAMBDA_FUNCTION_VERSION")
+func EnvAWSLambdaFunctionVersion() lambdaext.FunctionVersion {
+	return lambdaext.FunctionVersion(os.Getenv("AWS_LAMBDA_FUNCTION_VERSION"))
 }
 
 // EnvAWSLambdaInitializationType returns the initialization type of the function, which is either on-demand or provisioned-concurrency. For information, see Configuring provisioned concurrency.
