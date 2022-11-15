@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	testIdentifier  = "test-identifier"
+	testExtensionID = "test-identifier"
 	testErrorType   = "extension.TestReason"
 	testErrorStatus = "OK"
 	errTest         = errors.New("text description of the error")
@@ -85,14 +85,14 @@ func TestOptions(t *testing.T) {
 		// WithEventTypes option should be used
 		require.JSONEq(t, `{"events":["INVOKE"]}`, string(req))
 
-		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		w.Header().Set("Lambda-Extension-Identifier", testExtensionID)
 		if _, err := w.Write(respRegister); err != nil {
 			t.Fatal(err)
 		}
 	})
 
 	var buf bytes.Buffer
-	var log = buflogr.NewWithBuffer(&buf)
+	log := buflogr.NewWithBuffer(&buf)
 
 	// AWS_LAMBDA_RUNTIME_API env variable should be ignored as WithAWSLambdaRuntimeAPI option was set
 	t.Setenv("AWS_LAMBDA_RUNTIME_API", "hostnotfound:80")
@@ -100,6 +100,7 @@ func TestOptions(t *testing.T) {
 	client := &http.Client{
 		Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 			req.Header.Set("TestOptions", "TestOptions")
+
 			return http.DefaultClient.Do(req)
 		}),
 	}
@@ -125,7 +126,6 @@ func TestRegister(t *testing.T) {
 	require.Equal(t, lambdaext.FunctionVersion("$LATEST"), client.FunctionVersion())
 	require.Equal(t, "lambda_function.lambda_handler", client.Handler())
 	require.Equal(t, "123456789012", client.AccountID())
-	require.Equal(t, testIdentifier, client.ExtensionID())
 }
 
 func TestLambdaAPIError(t *testing.T) {
@@ -157,10 +157,10 @@ func TestNextEvent_Invoke(t *testing.T) {
 		defer r.Body.Close()
 
 		require.Equal(t, http.MethodGet, r.Method)
-		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+		require.Equal(t, testExtensionID, r.Header.Get("Lambda-Extension-Identifier"))
 		require.Empty(t, r.Header.Get("Content-Type"))
 
-		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		w.Header().Set("Lambda-Extension-Identifier", testExtensionID)
 		if _, err := w.Write(respNextEvent); err != nil {
 			t.Fatal(err)
 		}
@@ -186,10 +186,10 @@ func TestNextEvent_Shutdown(t *testing.T) {
 		defer r.Body.Close()
 
 		require.Equal(t, http.MethodGet, r.Method)
-		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+		require.Equal(t, testExtensionID, r.Header.Get("Lambda-Extension-Identifier"))
 		require.Empty(t, r.Header.Get("Content-Type"))
 
-		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		w.Header().Set("Lambda-Extension-Identifier", testExtensionID)
 		if _, err := w.Write(respNextEvent); err != nil {
 			t.Fatal(err)
 		}
@@ -212,7 +212,7 @@ func TestInitError(t *testing.T) {
 
 		require.Equal(t, http.MethodPost, r.Method)
 		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+		require.Equal(t, testExtensionID, r.Header.Get("Lambda-Extension-Identifier"))
 		require.Equal(t, testErrorType, r.Header.Get("Lambda-Extension-Function-Error-Type"))
 
 		req, err := io.ReadAll(r.Body)
@@ -221,7 +221,7 @@ func TestInitError(t *testing.T) {
 		}
 		require.Equal(t, errTest.Error(), string(req))
 
-		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		w.Header().Set("Lambda-Extension-Identifier", testExtensionID)
 		w.WriteHeader(http.StatusAccepted)
 		if _, err := w.Write(respError); err != nil {
 			t.Fatal(err)
@@ -258,7 +258,7 @@ func TestExitError(t *testing.T) {
 
 		require.Equal(t, http.MethodPost, r.Method)
 		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+		require.Equal(t, testExtensionID, r.Header.Get("Lambda-Extension-Identifier"))
 		require.Equal(t, testErrorType, r.Header.Get("Lambda-Extension-Function-Error-Type"))
 
 		req, err := io.ReadAll(r.Body)
@@ -267,7 +267,7 @@ func TestExitError(t *testing.T) {
 		}
 		require.Equal(t, errTest.Error(), string(req))
 
-		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		w.Header().Set("Lambda-Extension-Identifier", testExtensionID)
 		w.WriteHeader(http.StatusAccepted)
 		if _, err := w.Write(respError); err != nil {
 			t.Fatal(err)
@@ -312,7 +312,7 @@ func register(t *testing.T) (*extapi.Client, *httptest.Server, *http.ServeMux, e
 		}
 		require.JSONEq(t, `{"events":["INVOKE","SHUTDOWN"]}`, string(req))
 
-		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		w.Header().Set("Lambda-Extension-Identifier", testExtensionID)
 		if _, err := w.Write(respRegister); err != nil {
 			t.Fatal(err)
 		}

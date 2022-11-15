@@ -22,7 +22,6 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 		"FunctionName", client.FunctionName(),
 		"FunctionVersion", client.FunctionVersion(),
 		"handler", client.Handler(),
-		"extensionID", client.ExtensionID(),
 	)
 
 	return nil

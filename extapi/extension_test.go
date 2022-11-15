@@ -61,7 +61,7 @@ func (h *lambdaAPIMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/2020-01-01/extension/register":
 		require.Falsef(h.t, h.registerCalled, "extension/register has already been called")
 		h.registerCalled = true
-		w.Header().Set("Lambda-Extension-Identifier", testIdentifier)
+		w.Header().Set("Lambda-Extension-Identifier", testExtensionID)
 		if _, err := w.Write(respRegister); err != nil {
 			require.NoError(h.t, err, "extension/register")
 		}

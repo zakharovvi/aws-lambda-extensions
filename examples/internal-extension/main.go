@@ -29,7 +29,6 @@ func (ext *Extension) Init(ctx context.Context, client *extapi.Client) error {
 		"FunctionName", client.FunctionName(),
 		"FunctionVersion", client.FunctionVersion(),
 		"handler", client.Handler(),
-		"extensionID", client.ExtensionID(),
 	)
 	ext.wg.Done()
 

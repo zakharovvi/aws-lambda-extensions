@@ -24,7 +24,7 @@ func TestSubscribe(t *testing.T) {
 
 		require.Equal(t, http.MethodPut, r.Method)
 		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		require.Equal(t, testIdentifier, r.Header.Get("Lambda-Extension-Identifier"))
+		require.Equal(t, testExtensionID, r.Header.Get("Lambda-Extension-Identifier"))
 
 		req, err := io.ReadAll(r.Body)
 		require.NoError(t, err)

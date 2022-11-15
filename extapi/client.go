@@ -80,11 +80,11 @@ type ErrorResponse struct {
 }
 
 const (
-	// nameHeader identifies the extension when registering.
-	nameHeader = "Lambda-Extension-Name"
-	// idHeader is a uuid that is required on subsequent requests.
-	idHeader        = "Lambda-Extension-Identifier"
-	errorTypeHeader = "Lambda-Extension-Function-Error-Type"
+	// extensionNameHeader identifies the extension when registering.
+	extensionNameHeader = "Lambda-Extension-Name"
+	// extensionIDHeader is a uuid that is required on subsequent requests.
+	extensionIDHeader = "Lambda-Extension-Identifier"
+	errorTypeHeader   = "Lambda-Extension-Function-Error-Type"
 	// acceptFeatureHeader is used to specify optional Extensions features during registration.
 	acceptFeatureHeader = "Lambda-Extension-Accept-Feature"
 )
@@ -191,10 +191,6 @@ func (c *Client) AccountID() string {
 	return c.registerResp.AccountID
 }
 
-func (c *Client) ExtensionID() string {
-	return c.extensionID
-}
-
 // Register registers the extension with the Lambda Extensions API. This happens
 // during extension Init. Each call must include the list of events in the body
 // and the lambdaext.ExtensionName in the headers.
@@ -251,7 +247,7 @@ func (c *Client) register(ctx context.Context, extensionName lambdaext.Extension
 	if err != nil {
 		return nil, fmt.Errorf("could not create register http request: %w", err)
 	}
-	req.Header.Set(nameHeader, string(extensionName))
+	req.Header.Set(extensionNameHeader, string(extensionName))
 	req.Header.Set(acceptFeatureHeader, "accountId")
 
 	registerResp := &RegisterResponse{}
@@ -260,9 +256,9 @@ func (c *Client) register(ctx context.Context, extensionName lambdaext.Extension
 		return nil, fmt.Errorf("register http call failed: %w", err)
 	}
 
-	c.extensionID = resp.Header.Get(idHeader)
+	c.extensionID = resp.Header.Get(extensionIDHeader)
 	if c.extensionID == "" {
-		return nil, fmt.Errorf("could not find extension ID in register response header %s", idHeader)
+		return nil, fmt.Errorf("could not find extension ID in register response header %s", extensionIDHeader)
 	}
 
 	c.log.V(1).Info("received register response", "response", registerResp)
@@ -335,7 +331,7 @@ func (c *Client) doRequest(req *http.Request, wantStatus int, out interface{}) (
 		req.Header.Set("Content-Type", "application/json")
 	}
 	if c.extensionID != "" {
-		req.Header.Set(idHeader, c.extensionID)
+		req.Header.Set(extensionIDHeader, c.extensionID)
 	}
 
 	resp, err := c.httpClient.Do(req)
