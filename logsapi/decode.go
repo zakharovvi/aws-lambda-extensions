@@ -74,25 +74,13 @@ type RecordPlatformReport struct {
 	Tracing extapi.Tracing `json:"tracing,omitempty"`
 }
 
-type Duration time.Duration
-
-func (d *Duration) UnmarshalJSON(b []byte) error {
-	var v float64
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	*d = Duration(v * float64(time.Millisecond))
-
-	return nil
-}
-
 type Metrics struct {
-	Duration       Duration `json:"durationMs"`
-	BilledDuration Duration `json:"billedDurationMs"`
+	Duration       lambdaext.DurationMs `json:"durationMs"`
+	BilledDuration lambdaext.DurationMs `json:"billedDurationMs"`
 	// InitDuration field is included in the log only if the invocation included a cold start.
-	InitDuration    Duration `json:"initDurationMs"`
-	MemorySizeMB    uint64   `json:"memorySizeMB"`
-	MaxMemoryUsedMB uint64   `json:"maxMemoryUsedMB"`
+	InitDuration    lambdaext.DurationMs `json:"initDurationMs"`
+	MemorySizeMB    uint64               `json:"memorySizeMB"`
+	MaxMemoryUsedMB uint64               `json:"maxMemoryUsedMB"`
 }
 
 // RecordPlatformExtension is generated when an extension registers with the extensions API.

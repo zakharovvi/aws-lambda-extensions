@@ -1,5 +1,10 @@
 package lambdaext
 
+import (
+	"encoding/json"
+	"time"
+)
+
 type AWSLambdaRuntimeAPI string
 
 type RequestID string
@@ -22,3 +27,15 @@ type TracingType string
 const TracingTypeAWSXRay TracingType = "X-Amzn-Trace-Id"
 
 type TracingValue string
+
+type DurationMs time.Duration
+
+func (d *DurationMs) UnmarshalJSON(b []byte) error {
+	var v float64
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	*d = DurationMs(v * float64(time.Millisecond))
+
+	return nil
+}

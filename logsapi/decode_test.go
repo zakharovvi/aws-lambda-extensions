@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	lambdaext "github.com/zakharovvi/aws-lambda-extensions"
 	"github.com/zakharovvi/aws-lambda-extensions/extapi"
 	"github.com/zakharovvi/aws-lambda-extensions/logsapi"
 )
@@ -201,11 +202,11 @@ func TestDecodeLogs_LogTypes(t *testing.T) {
 				Record: logsapi.RecordPlatformReport{
 					RequestID: "6f7f0961f83442118a7af6fe80b88d56",
 					Metrics: logsapi.Metrics{
-						Duration:        logsapi.Duration(101510 * time.Microsecond),
-						BilledDuration:  logsapi.Duration(300 * time.Millisecond),
+						Duration:        lambdaext.DurationMs(101510 * time.Microsecond),
+						BilledDuration:  lambdaext.DurationMs(300 * time.Millisecond),
 						MemorySizeMB:    512,
 						MaxMemoryUsedMB: 33,
-						InitDuration:    logsapi.Duration(116670 * time.Microsecond),
+						InitDuration:    lambdaext.DurationMs(116670 * time.Microsecond),
 					},
 				},
 			},
