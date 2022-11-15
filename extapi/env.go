@@ -43,8 +43,8 @@ func EnvAWSLambdaFunctionVersion() lambdaext.FunctionVersion {
 }
 
 // EnvAWSLambdaInitializationType returns the initialization type of the function, which is either on-demand or provisioned-concurrency. For information, see Configuring provisioned concurrency.
-func EnvAWSLambdaInitializationType() string {
-	return os.Getenv("AWS_LAMBDA_INITIALIZATION_TYPE")
+func EnvAWSLambdaInitializationType() lambdaext.InitType {
+	return lambdaext.InitType(os.Getenv("AWS_LAMBDA_INITIALIZATION_TYPE"))
 }
 
 // EnvAWSLambdaRuntimeAPI returns the host and port of the runtime API for custom runtime.
