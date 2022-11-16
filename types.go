@@ -2,6 +2,7 @@ package lambdaext
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -31,11 +32,18 @@ type TracingValue string
 type DurationMs time.Duration
 
 func (d *DurationMs) UnmarshalJSON(b []byte) error {
-	var v float64
+	var v interface{}
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
-	*d = DurationMs(v * float64(time.Millisecond))
+	switch val := v.(type) {
+	case float64:
+		*d = DurationMs(val * float64(time.Millisecond))
+	case int:
+		*d = DurationMs(val * int(time.Millisecond))
+	default:
+		return fmt.Errorf("invalid duration: %#v", v)
+	}
 
 	return nil
 }
