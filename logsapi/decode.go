@@ -9,6 +9,7 @@ import (
 
 	lambdaext "github.com/zakharovvi/aws-lambda-extensions"
 	"github.com/zakharovvi/aws-lambda-extensions/extapi"
+	"github.com/zakharovvi/aws-lambda-extensions/internal"
 )
 
 // LogType represents the type of logs received from Lambda Logs API.
@@ -132,95 +133,61 @@ type RecordExtension string
 // DecodeLogs is low-level function. Consider using Run instead and implement LogProcessor.
 // DecodeLogs drains and closes the input stream afterwards.
 func DecodeLogs(ctx context.Context, r io.ReadCloser, logs chan<- Log) error {
-	defer func() {
-		_, _ = io.Copy(io.Discard, r)
-		_ = r.Close()
-	}()
-
-	d := json.NewDecoder(r)
-	if err := readBracket(d, "["); err != nil {
-		return err
-	}
-	for d.More() {
-		msg := Log{}
-		if err := d.Decode(&msg); err != nil {
-			return fmt.Errorf("could not decode log message from json array: %w", err)
-		}
-		var unmarshalErr error
-		switch msg.LogType {
-		case LogPlatformStart:
-			record := RecordPlatformStart{}
-			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
-			msg.Record = record
-		case LogPlatformEnd:
-			record := RecordPlatformEnd{}
-			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
-			msg.Record = record
-		case LogPlatformReport:
-			record := RecordPlatformReport{}
-			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
-			msg.Record = record
-		case LogPlatformExtension:
-			record := RecordPlatformExtension{}
-			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
-			msg.Record = record
-		case LogPlatformLogsSubscription:
-			record := RecordPlatformLogsSubscription{}
-			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
-			msg.Record = record
-		case LogPlatformLogsDropped:
-			record := RecordPlatformLogsDropped{}
-			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
-			msg.Record = record
-		case LogPlatformFault:
-			record := RecordPlatformFault("")
-			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
-			msg.Record = record
-		case LogPlatformRuntimeDone:
-			record := RecordPlatformRuntimeDone{}
-			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
-			msg.Record = record
-		case LogFunction:
-			record := RecordFunction("")
-			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
-			msg.Record = record
-		case LogExtension:
-			record := RecordExtension("")
-			unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
-			msg.Record = record
-		default:
-			return fmt.Errorf(`could not decode unknown log type "%s" and record "%s"`, msg.LogType, msg.RawRecord)
-		}
-		if unmarshalErr != nil {
-			return fmt.Errorf("could not decode log record %s for log type %s with error: %w", msg.RawRecord, msg.LogType, unmarshalErr)
-		}
-
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("decoding was interrupted with context error: %w", ctx.Err())
-		default:
-		}
-		logs <- msg
-	}
-	if err := readBracket(d, "]"); err != nil {
-		return err
-	}
-
-	return nil
+	return internal.Decode(ctx, r, logs, decodeNext)
 }
 
-func readBracket(d *json.Decoder, want string) error {
-	t, err := d.Token()
-	if err != nil {
-		return fmt.Errorf("malformed json array: %w", err)
+func decodeNext(d *json.Decoder) (Log, error) {
+	msg := Log{}
+	if err := d.Decode(&msg); err != nil {
+		return msg, fmt.Errorf("could not decode log message from json array: %w", err)
 	}
-	delim, ok := t.(json.Delim)
-	if !ok {
-		return fmt.Errorf("malformed json array, want %s, got %v", want, t)
+	var unmarshalErr error
+	switch msg.LogType {
+	case LogPlatformStart:
+		record := RecordPlatformStart{}
+		unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+		msg.Record = record
+	case LogPlatformEnd:
+		record := RecordPlatformEnd{}
+		unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+		msg.Record = record
+	case LogPlatformReport:
+		record := RecordPlatformReport{}
+		unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+		msg.Record = record
+	case LogPlatformExtension:
+		record := RecordPlatformExtension{}
+		unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+		msg.Record = record
+	case LogPlatformLogsSubscription:
+		record := RecordPlatformLogsSubscription{}
+		unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+		msg.Record = record
+	case LogPlatformLogsDropped:
+		record := RecordPlatformLogsDropped{}
+		unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+		msg.Record = record
+	case LogPlatformFault:
+		record := RecordPlatformFault("")
+		unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+		msg.Record = record
+	case LogPlatformRuntimeDone:
+		record := RecordPlatformRuntimeDone{}
+		unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+		msg.Record = record
+	case LogFunction:
+		record := RecordFunction("")
+		unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+		msg.Record = record
+	case LogExtension:
+		record := RecordExtension("")
+		unmarshalErr = json.Unmarshal(msg.RawRecord, &record)
+		msg.Record = record
+	default:
+		return msg, fmt.Errorf(`could not decode unknown log type "%s" and record "%s"`, msg.LogType, msg.RawRecord)
 	}
-	if delim.String() != want {
-		return fmt.Errorf("malformed json array, want %s, got %v", want, delim.String())
+	if unmarshalErr != nil {
+		return msg, fmt.Errorf("could not decode log record %s for log type %s with error: %w", msg.RawRecord, msg.LogType, unmarshalErr)
 	}
-
-	return nil
+	return msg, nil
 }
