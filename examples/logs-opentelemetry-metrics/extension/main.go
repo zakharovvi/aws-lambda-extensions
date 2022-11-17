@@ -35,13 +35,13 @@ type LogProcessor struct {
 	logsDroppedRecords syncint64.Counter
 }
 
-func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	exp, err := stdoutmetric.New(stdoutmetric.WithEncoder(json.NewEncoder(os.Stdout)))
 	if err != nil {
 		return err
 	}
 
-	lp.sdk = metric.NewMeterProvider(
+	proc.sdk = metric.NewMeterProvider(
 		metric.WithResource(resource.NewSchemaless(
 			semconv.CloudProviderAWS,
 			semconv.CloudPlatformAWSLambda,
@@ -54,9 +54,9 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 		metric.WithReader(metric.NewPeriodicReader(exp)),
 	)
 
-	meter := lp.sdk.Meter("lambda_function")
+	meter := proc.sdk.Meter("lambda_function")
 
-	lp.duration, err = meter.SyncInt64().Histogram(
+	proc.duration, err = meter.SyncInt64().Histogram(
 		"lambda_duration_ms",
 		instrument.WithUnit(unit.Milliseconds),
 		instrument.WithDescription("the amount of time that your function's handler method spent processing the event"),
@@ -64,7 +64,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	if err != nil {
 		return err
 	}
-	lp.billedDuration, err = meter.SyncInt64().Histogram(
+	proc.billedDuration, err = meter.SyncInt64().Histogram(
 		"lambda_duration_billed_ms",
 		instrument.WithUnit(unit.Milliseconds),
 		instrument.WithDescription("the amount of time billed for the invocation"),
@@ -72,7 +72,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	if err != nil {
 		return err
 	}
-	lp.initDuration, err = meter.SyncInt64().Histogram(
+	proc.initDuration, err = meter.SyncInt64().Histogram(
 		"lambda_duration_init_ms",
 		instrument.WithUnit(unit.Milliseconds),
 		instrument.WithDescription("for the first request served, the amount of time it took the runtime to load the function and run code outside of the handler method"),
@@ -80,7 +80,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	if err != nil {
 		return err
 	}
-	lp.memorySizeMB, err = meter.SyncInt64().Histogram(
+	proc.memorySizeMB, err = meter.SyncInt64().Histogram(
 		"lambda_memory_size_bytes",
 		instrument.WithUnit(unit.Bytes),
 		instrument.WithDescription("the amount of memory allocated to the function"),
@@ -88,7 +88,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	if err != nil {
 		return err
 	}
-	lp.maxMemoryUsedMB, err = meter.SyncInt64().Histogram(
+	proc.maxMemoryUsedMB, err = meter.SyncInt64().Histogram(
 		"lambda_max_memory_used_bytes",
 		instrument.WithUnit(unit.Bytes),
 		instrument.WithDescription("the amount of memory used by the function"),
@@ -96,7 +96,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	if err != nil {
 		return err
 	}
-	lp.platformFaults, err = meter.SyncInt64().Counter(
+	proc.platformFaults, err = meter.SyncInt64().Counter(
 		"lambda_platform_faults",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("runtime or execution environment errors"),
@@ -104,7 +104,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	if err != nil {
 		return err
 	}
-	lp.runtimeDone, err = meter.SyncInt64().Counter(
+	proc.runtimeDone, err = meter.SyncInt64().Counter(
 		"lambda_runtime_done",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("function invocation completes either successfully or with an error"),
@@ -112,7 +112,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	if err != nil {
 		return err
 	}
-	lp.logsDroppedBytes, err = meter.SyncInt64().Counter(
+	proc.logsDroppedBytes, err = meter.SyncInt64().Counter(
 		"lambda_logs_dropped_bytes",
 		instrument.WithUnit(unit.Bytes),
 		instrument.WithDescription("dropped bytes when an extension is not able to process the number of logs that it is receiving"),
@@ -120,7 +120,7 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	if err != nil {
 		return err
 	}
-	lp.logsDroppedRecords, err = meter.SyncInt64().Counter(
+	proc.logsDroppedRecords, err = meter.SyncInt64().Counter(
 		"lambda_logs_dropped_records",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("dropped records when an extension is not able to process the number of logs that it is receiving"),
@@ -132,34 +132,34 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	return nil
 }
 
-func (lp *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
+func (proc *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
 	var err error
 	switch record := msg.Record.(type) {
 	case logsapi.RecordPlatformReport:
-		lp.duration.Record(ctx, time.Duration(record.Metrics.Duration).Milliseconds())
-		lp.billedDuration.Record(ctx, time.Duration(record.Metrics.BilledDuration).Milliseconds())
-		lp.initDuration.Record(ctx, time.Duration(record.Metrics.InitDuration).Milliseconds())
-		lp.memorySizeMB.Record(ctx, int64(record.Metrics.MemorySizeMB*1024*1024))
-		lp.maxMemoryUsedMB.Record(ctx, int64(record.Metrics.MaxMemoryUsedMB*1024*1024))
+		proc.duration.Record(ctx, time.Duration(record.Metrics.Duration).Milliseconds())
+		proc.billedDuration.Record(ctx, time.Duration(record.Metrics.BilledDuration).Milliseconds())
+		proc.initDuration.Record(ctx, time.Duration(record.Metrics.InitDuration).Milliseconds())
+		proc.memorySizeMB.Record(ctx, int64(record.Metrics.MemorySizeMB*1024*1024))
+		proc.maxMemoryUsedMB.Record(ctx, int64(record.Metrics.MaxMemoryUsedMB*1024*1024))
 	case logsapi.RecordPlatformFault:
-		lp.platformFaults.Add(ctx, 1)
+		proc.platformFaults.Add(ctx, 1)
 	case logsapi.RecordPlatformRuntimeDone:
-		lp.runtimeDone.Add(ctx, 1, attribute.String("status", string(record.Status)))
+		proc.runtimeDone.Add(ctx, 1, attribute.String("status", string(record.Status)))
 
 		// RecordPlatformRuntimeDone is generated after the function invocation completes either successfully or with an error.
 		// The extension can use this message to stop all the telemetry collection for this function invocation.
-		err = lp.sdk.ForceFlush(ctx)
+		err = proc.sdk.ForceFlush(ctx)
 
 	case logsapi.RecordPlatformLogsDropped:
-		lp.logsDroppedBytes.Add(ctx, int64(record.DroppedBytes))
-		lp.logsDroppedBytes.Add(ctx, int64(record.DroppedRecords))
+		proc.logsDroppedBytes.Add(ctx, int64(record.DroppedBytes))
+		proc.logsDroppedBytes.Add(ctx, int64(record.DroppedRecords))
 	}
 
 	return err
 }
 
-func (lp *LogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
-	return lp.sdk.Shutdown(ctx)
+func (proc *LogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+	return proc.sdk.Shutdown(ctx)
 }
 
 func main() {

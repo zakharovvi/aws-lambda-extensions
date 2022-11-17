@@ -47,25 +47,25 @@ type testLogProcessor struct {
 	shutdownCalled bool
 }
 
-func (lp *testLogProcessor) Init(ctx context.Context, client *extapi.Client) error {
-	lp.initCalled = true
+func (proc *testLogProcessor) Init(ctx context.Context, client *extapi.Client) error {
+	proc.initCalled = true
 
-	return lp.initErr
+	return proc.initErr
 }
 
-func (lp *testLogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
-	lp.receivedLogs = append(lp.receivedLogs, msg)
+func (proc *testLogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
+	proc.receivedLogs = append(proc.receivedLogs, msg)
 
-	res := lp.processErrors[0]
-	lp.processErrors = lp.processErrors[1:]
+	res := proc.processErrors[0]
+	proc.processErrors = proc.processErrors[1:]
 
 	return res
 }
 
-func (lp *testLogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
-	lp.shutdownCalled = true
+func (proc *testLogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+	proc.shutdownCalled = true
 
-	return lp.shutdownErr
+	return proc.shutdownErr
 }
 
 type lambdaAPIMock struct {
@@ -147,7 +147,7 @@ func TestRun(t *testing.T) {
 	tests := []struct {
 		name                    string
 		apiMock                 *lambdaAPIMock
-		lp                      *testLogProcessor
+		proc                    *testLogProcessor
 		destinationAddr         string
 		wantReceivedLogs        []logsapi.Log
 		wantRunErr              error
@@ -339,19 +339,19 @@ func TestRun(t *testing.T) {
 			defer server.Close()
 			t.Setenv("AWS_LAMBDA_RUNTIME_API", server.Listener.Addr().String())
 
-			err := logsapi.Run(context.Background(), tt.lp, logsapi.WithDestinationAddr(tt.destinationAddr))
+			err := logsapi.Run(context.Background(), tt.proc, logsapi.WithDestinationAddr(tt.destinationAddr))
 			if tt.wantRunErr == nil {
 				require.NoError(t, err)
 			} else {
 				require.EqualError(t, err, tt.wantRunErr.Error())
 			}
-			require.True(t, tt.lp.initCalled)
-			require.True(t, tt.lp.shutdownCalled)
+			require.True(t, tt.proc.initCalled)
+			require.True(t, tt.proc.shutdownCalled)
 			require.True(t, tt.apiMock.registerCalled)
 			require.Equal(t, tt.wantLogsSubscribeCalled, tt.apiMock.logsSubscribeCalled)
 			require.Equal(t, tt.wantInitErrorCalled, tt.apiMock.initErrorCalled)
 			require.Equal(t, tt.wantExitErrorCalled, tt.apiMock.exitErrorCalled)
-			require.Equal(t, tt.wantReceivedLogs, tt.lp.receivedLogs)
+			require.Equal(t, tt.wantReceivedLogs, tt.proc.receivedLogs)
 		})
 	}
 }

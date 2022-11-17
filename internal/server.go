@@ -24,7 +24,7 @@ type decoder[T any] func(ctx context.Context, r io.ReadCloser, events chan<- T) 
 type subscriber func(ctx context.Context, client *extapi.Client, destinationURL string) error
 
 type Extension[T any] struct {
-	ep           eventProcessor[T]
+	proc         eventProcessor[T]
 	srv          *http.Server
 	eventsCh     chan T
 	errCh        chan error
@@ -37,7 +37,7 @@ type Extension[T any] struct {
 
 func NewExtension[T any](
 	ctx context.Context,
-	lp eventProcessor[T],
+	proc eventProcessor[T],
 	destinationAddr string,
 	log logr.Logger,
 	decoder decoder[T],
@@ -45,7 +45,7 @@ func NewExtension[T any](
 ) *Extension[T] {
 	decodeCtx, decodeCancel := context.WithCancel(ctx)
 	ext := &Extension[T]{
-		lp,
+		proc,
 		&http.Server{
 			Addr: destinationAddr,
 			BaseContext: func(_ net.Listener) context.Context {
@@ -70,7 +70,7 @@ func (ext *Extension[T]) Init(ctx context.Context, client *extapi.Client) error 
 	// in case of Init error ext.Shutdown is called and waits for ext.doneCh to be closed in ext.startEventProcessing
 	go ext.startEventProcessing(ctx)
 
-	if err := ext.ep.Init(ctx, client); err != nil {
+	if err := ext.proc.Init(ctx, client); err != nil {
 		return fmt.Errorf("EventProcessor.Init failed: %w", err)
 	}
 
@@ -148,12 +148,12 @@ func (ext *Extension[T]) Shutdown(ctx context.Context, reason extapi.ShutdownRea
 	<-ext.doneCh
 
 	ext.log.V(1).Info("calling EventProcessor.Shutdown")
-	lpErr := ext.ep.Shutdown(ctx, reason, err)
-	if lpErr != nil {
-		lpErr = fmt.Errorf("EventProcessor.Shutdown failed: %w", lpErr)
-		ext.log.Error(lpErr, "")
+	procErr := ext.proc.Shutdown(ctx, reason, err)
+	if procErr != nil {
+		procErr = fmt.Errorf("EventProcessor.Shutdown failed: %w", procErr)
+		ext.log.Error(procErr, "")
 
-		return lpErr
+		return procErr
 	}
 
 	return srvErr
@@ -200,7 +200,7 @@ func (ext *Extension[T]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (ext *Extension[T]) startEventProcessing(ctx context.Context) {
 	for event := range ext.eventsCh {
 		ext.log.V(1).Info("calling EventProcessor.Process", "event", event)
-		if err := ext.ep.Process(ctx, event); err != nil {
+		if err := ext.proc.Process(ctx, event); err != nil {
 			err = fmt.Errorf("EventProcessor.Process failed: %w", err)
 			ext.log.Error(err, "")
 			select {

@@ -10,7 +10,7 @@ import (
 
 type LogProcessor struct{}
 
-func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	log.Printf(
 		"initializing LogProcessor for function %s(%s), handler %s and accountID %s\n",
 		client.FunctionName(),
@@ -22,13 +22,13 @@ func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	return nil
 }
 
-func (lp *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
+func (proc *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
 	log.Printf("time=%s type=%s\n", msg.LogType, msg.Time)
 
 	return nil
 }
 
-func (lp *LogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+func (proc *LogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
 	log.Printf("shutting down extension due to reason=%s error=%v\n", reason, err)
 
 	return nil

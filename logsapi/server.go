@@ -92,7 +92,7 @@ func WithDestinationAddr(addr string) Option {
 
 // Run runs the LogProcessor.
 // Run blocks the current goroutine till extension lifecycle is finished or error occurs.
-func Run(ctx context.Context, lp LogProcessor, opts ...Option) error {
+func Run(ctx context.Context, proc LogProcessor, opts ...Option) error {
 	options := options{
 		destinationAddr: "sandbox.localdomain:0",
 		log:             logr.FromContextOrDiscard(ctx),
@@ -115,7 +115,7 @@ func Run(ctx context.Context, lp LogProcessor, opts ...Option) error {
 
 	ext := internal.NewExtension[Log](
 		ctx,
-		lp,
+		proc,
 		options.destinationAddr,
 		options.log,
 		DecodeLogs,
