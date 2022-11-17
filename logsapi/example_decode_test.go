@@ -36,7 +36,6 @@ func ExampleDecodeLogs() {
 
 			return
 		}
-		w.WriteHeader(http.StatusOK)
 	})
 	log.Panic(http.ListenAndServe("", nil))
 }

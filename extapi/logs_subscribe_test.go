@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	logReceiverURL = "http://sandbox.localdomain:8080"
+	logReceiverURL = "http://sandbox.localdomain:8080/logs"
 )
 
-func TestSubscribe(t *testing.T) {
+func TestLogsSubscribe(t *testing.T) {
 	client, server, mux, err := register(t)
 	require.NoError(t, err)
 	defer server.Close()
@@ -31,14 +31,20 @@ func TestSubscribe(t *testing.T) {
 
 		subscribeReq := &extapi.LogsSubscribeRequest{}
 		require.NoError(t, json.Unmarshal(req, subscribeReq))
-		require.Equal(t, logReceiverURL, subscribeReq.Destination.URI)
-		require.Equal(
-			t,
-			[]extapi.LogSubscriptionType{extapi.LogSubscriptionTypePlatform, extapi.LogSubscriptionTypeFunction},
-			subscribeReq.LogTypes,
-		)
 
-		w.WriteHeader(http.StatusOK)
+		want := &extapi.LogsSubscribeRequest{
+			SchemaVersion: extapi.LogsSchemaVersion20210318,
+			LogTypes:      []extapi.LogSubscriptionType{extapi.LogSubscriptionTypePlatform, extapi.LogSubscriptionTypeFunction},
+			BufferingCfg:  nil,
+			Destination: &extapi.LogsDestination{
+				Protocol:   "HTTP",
+				URI:        logReceiverURL,
+				HTTPMethod: "",
+				Encoding:   "",
+			},
+		}
+		require.Equal(t, want, subscribeReq)
+
 		_, err = w.Write([]byte("OK"))
 		require.NoError(t, err)
 	})
