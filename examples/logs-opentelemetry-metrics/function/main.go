@@ -14,7 +14,7 @@ func HandleRequest(ctx context.Context) (string, error) {
 	startedAt := time.Now()
 	for i := 0; i < 10; i++ {
 		log.Printf("function is working for %v", time.Since(startedAt))
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(time.Millisecond)
 	}
 
 	return fmt.Sprintf("function stopped after %v", time.Since(startedAt)), nil
