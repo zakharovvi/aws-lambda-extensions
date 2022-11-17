@@ -53,7 +53,9 @@ type Log struct {
 	// RawRecord property defines a JSON object that contains the telemetry data.
 	// The schema of this JSON object depends on the type.
 	RawRecord json.RawMessage `json:"record"`
-	Record    any             `json:"-"`
+	// Record property defines a struct that contains the telemetry data.
+	// The type of the struct depends on the Log.LogType
+	Record any `json:"decodedRecord,omitempty"` // tag for printing the field with json.Marshall
 }
 
 // RecordPlatformStart is the invocation start time.

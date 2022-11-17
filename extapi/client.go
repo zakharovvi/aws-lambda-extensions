@@ -169,9 +169,10 @@ func WithLogger(log logr.Logger) Option {
 type Client struct {
 	awsLambdaRuntimeAPI lambdaext.AWSLambdaRuntimeAPI
 	httpClient          *http.Client
-	extensionID         string
-	registerResp        *RegisterResponse
-	log                 logr.Logger
+	// extensionID is a generated unique agent identifier (UUID string) that is required for all subsequent requests after Client.register.
+	extensionID  string
+	registerResp *RegisterResponse
+	log          logr.Logger
 }
 
 func (c *Client) FunctionName() string {

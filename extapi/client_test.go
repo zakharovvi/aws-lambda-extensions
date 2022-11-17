@@ -174,7 +174,7 @@ func TestNextEvent_Invoke(t *testing.T) {
 	require.Equal(t, lambdaext.RequestID("3da1f2dc-3222-475e-9205-e2e6c6318895"), event.RequestID)
 	require.Equal(t, "arn:aws:lambda:us-east-1:123456789012:function:ExtensionTest", event.InvokedFunctionArn)
 	require.Equal(t, int64(9223372036854775807), event.DeadlineMs)
-	require.Equal(t, lambdaext.TracingType("X-Amzn-Trace-Id"), event.Tracing.Type)
+	require.Equal(t, lambdaext.TracingTypeAWSXRay, event.Tracing.Type)
 	require.Equal(t, lambdaext.TracingValue("Root=1-5f35ae12-0c0fec141ab77a00bc047aa2;Parent=2be948a625588e32;Sampled=1"), event.Tracing.Value)
 }
 

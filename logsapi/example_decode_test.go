@@ -11,7 +11,7 @@ func ExampleDecodeLogs() {
 	// 1. create channel for decoded logs
 	logsCh := make(chan logsapi.Log)
 
-	// 2. consume decoded logs from channel
+	// 2. consume decoded logs from the channel
 	go func() {
 		for msg := range logsCh {
 			log.Println(msg.LogType)
