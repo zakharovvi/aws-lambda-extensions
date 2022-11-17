@@ -12,10 +12,11 @@ type LogProcessor struct{}
 
 func (lp *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	log.Printf(
-		"initializing LogProcessor for function %s(%s) and handler %s\n",
+		"initializing LogProcessor for function %s(%s), handler %s and accountID %s\n",
 		client.FunctionName(),
 		client.FunctionVersion(),
 		client.Handler(),
+		client.AccountID(),
 	)
 
 	return nil

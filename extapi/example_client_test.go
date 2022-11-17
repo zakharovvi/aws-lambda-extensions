@@ -23,6 +23,7 @@ func ExampleClient() {
 	log.Println(client.FunctionName())
 	log.Println(client.FunctionVersion())
 	log.Println(client.Handler())
+	log.Println(client.AccountID())
 
 	// 2. initialize the extension
 	initFunc := func() error { return nil }
