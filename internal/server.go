@@ -24,15 +24,15 @@ type decoder[T any] func(ctx context.Context, r io.ReadCloser, events chan<- T) 
 type subscriber func(ctx context.Context, client *extapi.Client, destinationURL string) error
 
 type Extension[T any] struct {
-	proc         eventProcessor[T]
-	srv          *http.Server
-	eventsCh     chan T
-	errCh        chan error
-	doneCh       chan struct{}
-	decodeCancel context.CancelFunc
-	log          logr.Logger
-	decoder      decoder[T]
-	subscriber   subscriber
+	proc             eventProcessor[T]
+	srv              *http.Server
+	eventsCh         chan T
+	errCh            chan error
+	processingDoneCh chan struct{}
+	decodeCancel     context.CancelFunc
+	log              logr.Logger
+	decoder          decoder[T]
+	subscriber       subscriber
 }
 
 func NewExtension[T any](
@@ -68,7 +68,7 @@ func NewExtension[T any](
 
 func (ext *Extension[T]) Init(ctx context.Context, client *extapi.Client) error {
 	// start log processing goroutine before EventProcessor.Init().
-	// in case of Init error ext.Shutdown is called and waits for ext.doneCh to be closed in ext.startEventProcessing
+	// in case of Init error ext.Shutdown is called and waits for ext.processingDoneCh to be closed in ext.startEventProcessing
 	go ext.startEventProcessing(ctx)
 
 	if err := ext.proc.Init(ctx, client); err != nil {
@@ -146,7 +146,7 @@ func (ext *Extension[T]) Shutdown(ctx context.Context, reason extapi.ShutdownRea
 	close(ext.eventsCh)
 
 	// wait EventProcessor.Process to finish
-	<-ext.doneCh
+	<-ext.processingDoneCh
 
 	ext.log.V(1).Info("calling EventProcessor.Shutdown")
 	procErr := ext.proc.Shutdown(ctx, reason, err)
@@ -214,5 +214,5 @@ func (ext *Extension[T]) startEventProcessing(ctx context.Context) {
 	}
 
 	ext.log.V(1).Info("event processing stopped")
-	close(ext.doneCh)
+	close(ext.processingDoneCh)
 }

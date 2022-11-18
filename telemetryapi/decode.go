@@ -218,7 +218,7 @@ type ReportMetrics struct {
 }
 
 // Decode consumes all logs from json array stream and send them to the provided channel.
-// Decode is low-level function. Consider using Run instead and implement TelemetryProcessor.
+// Decode is low-level function. Consider using Run instead and implement Processor.
 // Decode drains and closes the input stream afterwards.
 func Decode(ctx context.Context, r io.ReadCloser, logs chan<- Event) error {
 	return internal.Decode(ctx, r, logs, decodeNext)

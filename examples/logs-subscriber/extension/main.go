@@ -12,11 +12,11 @@ import (
 	"github.com/zakharovvi/aws-lambda-extensions/logsapi"
 )
 
-type LogProcessor struct {
+type Processor struct {
 	logger logr.Logger
 }
 
-func (proc *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *Processor) Init(ctx context.Context, client *extapi.Client) error {
 	proc.logger.Info(
 		"initializing log processor...",
 		"FunctionName", client.FunctionName(),
@@ -28,7 +28,7 @@ func (proc *LogProcessor) Init(ctx context.Context, client *extapi.Client) error
 	return nil
 }
 
-func (proc *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
+func (proc *Processor) Process(ctx context.Context, msg logsapi.Log) error {
 	msg.RawRecord = nil // do not log raw bytes
 	proc.logger.Info(
 		"received log message",
@@ -37,9 +37,9 @@ func (proc *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
 	return nil
 }
 
-func (proc *LogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+func (proc *Processor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
 	proc.logger.Info(
-		"shutting down LogProcessor...",
+		"shutting down Processor...",
 		"reason", reason,
 		"error", err,
 	)
@@ -54,7 +54,7 @@ func main() {
 
 	if err := logsapi.Run(
 		context.Background(),
-		&LogProcessor{logger},
+		&Processor{logger},
 		logsapi.WithLogger(logger),
 		logsapi.WithBufferingCfg(&extapi.LogsBufferingCfg{TimeoutMS: 25, MaxBytes: 262144, MaxItems: 1000}),
 	); err != nil {

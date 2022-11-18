@@ -38,7 +38,7 @@ var (
 	`)
 )
 
-type testTelemetryProcessor struct {
+type testProcessor struct {
 	initCalled     bool
 	initErr        error
 	receivedEvents []telemetryapi.Event
@@ -47,13 +47,13 @@ type testTelemetryProcessor struct {
 	shutdownCalled bool
 }
 
-func (proc *testTelemetryProcessor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *testProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	proc.initCalled = true
 
 	return proc.initErr
 }
 
-func (proc *testTelemetryProcessor) Process(ctx context.Context, msg telemetryapi.Event) error {
+func (proc *testProcessor) Process(ctx context.Context, msg telemetryapi.Event) error {
 	proc.receivedEvents = append(proc.receivedEvents, msg)
 
 	res := proc.processErrors[0]
@@ -62,7 +62,7 @@ func (proc *testTelemetryProcessor) Process(ctx context.Context, msg telemetryap
 	return res
 }
 
-func (proc *testTelemetryProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+func (proc *testProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
 	proc.shutdownCalled = true
 
 	return proc.shutdownErr
@@ -147,7 +147,7 @@ func TestRun(t *testing.T) {
 	tests := []struct {
 		name                         string
 		apiMock                      *lambdaAPIMock
-		proc                         *testTelemetryProcessor
+		proc                         *testProcessor
 		destinationAddr              string
 		wantReceivedEvents           []telemetryapi.Event
 		wantRunErr                   error
@@ -158,7 +158,7 @@ func TestRun(t *testing.T) {
 		{
 			"no events",
 			&lambdaAPIMock{},
-			&testTelemetryProcessor{},
+			&testProcessor{},
 			"localhost:10000",
 			nil,
 			nil,
@@ -169,7 +169,7 @@ func TestRun(t *testing.T) {
 		{
 			"server start failed",
 			&lambdaAPIMock{},
-			&testTelemetryProcessor{},
+			&testProcessor{},
 			"127.0.0.1:1",
 			nil,
 			errors.New("Extension.Init failed: could not start event receiving HTTP server: listen tcp 127.0.0.1:1: bind: permission denied"),
@@ -182,7 +182,7 @@ func TestRun(t *testing.T) {
 			&lambdaAPIMock{
 				telemetrySubscribeStatus: http.StatusInternalServerError,
 			},
-			&testTelemetryProcessor{},
+			&testProcessor{},
 			"localhost:10000",
 			nil,
 			errors.New("Extension.Init failed: telemetry subscribe http call failed: http request failed with status 500 Internal Server Error and body: "),
@@ -199,7 +199,7 @@ func TestRun(t *testing.T) {
 				},
 				wantEventsResponses: []int{http.StatusOK, http.StatusOK},
 			},
-			&testTelemetryProcessor{
+			&testProcessor{
 				processErrors: []error{nil, nil, nil, nil},
 			},
 			"localhost:10000",
@@ -242,7 +242,7 @@ func TestRun(t *testing.T) {
 				},
 				wantEventsResponses: []int{http.StatusInternalServerError},
 			},
-			&testTelemetryProcessor{
+			&testProcessor{
 				processErrors: []error{nil},
 			},
 			"localhost:10000",
@@ -267,7 +267,7 @@ func TestRun(t *testing.T) {
 				},
 				wantEventsResponses: []int{http.StatusOK},
 			},
-			&testTelemetryProcessor{
+			&testProcessor{
 				processErrors: []error{nil, errors.New("test_error")},
 			},
 			"localhost:10000",
@@ -298,7 +298,7 @@ func TestRun(t *testing.T) {
 				},
 				wantEventsResponses: []int{http.StatusOK},
 			},
-			&testTelemetryProcessor{
+			&testProcessor{
 				processErrors: []error{nil},
 				shutdownErr:   errors.New("shutdown_failed"),
 			},
@@ -319,7 +319,7 @@ func TestRun(t *testing.T) {
 		{
 			"EventProcessor.Init failed",
 			&lambdaAPIMock{},
-			&testTelemetryProcessor{
+			&testProcessor{
 				initErr: errors.New("test error"),
 			},
 			"localhost:10000",

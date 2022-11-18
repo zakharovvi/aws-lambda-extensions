@@ -12,11 +12,11 @@ import (
 	"github.com/zakharovvi/aws-lambda-extensions/telemetryapi"
 )
 
-type TelemetryProcessor struct {
+type Processor struct {
 	logger logr.Logger
 }
 
-func (proc *TelemetryProcessor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *Processor) Init(ctx context.Context, client *extapi.Client) error {
 	proc.logger.Info(
 		"initializing event processor...",
 		"FunctionName", client.FunctionName(),
@@ -28,7 +28,7 @@ func (proc *TelemetryProcessor) Init(ctx context.Context, client *extapi.Client)
 	return nil
 }
 
-func (proc *TelemetryProcessor) Process(ctx context.Context, msg telemetryapi.Event) error {
+func (proc *Processor) Process(ctx context.Context, msg telemetryapi.Event) error {
 	msg.RawRecord = nil // do not log raw bytes
 	proc.logger.Info(
 		"received an event",
@@ -37,7 +37,7 @@ func (proc *TelemetryProcessor) Process(ctx context.Context, msg telemetryapi.Ev
 	return nil
 }
 
-func (proc *TelemetryProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+func (proc *Processor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
 	proc.logger.Info(
 		"shutting down event processor...",
 		"reason", reason,
@@ -54,7 +54,7 @@ func main() {
 
 	if err := telemetryapi.Run(
 		context.Background(),
-		&TelemetryProcessor{logger},
+		&Processor{logger},
 		telemetryapi.WithLogger(logger),
 		telemetryapi.WithBufferingCfg(&extapi.TelemetryBufferingCfg{TimeoutMS: 25, MaxBytes: 262144, MaxItems: 1000}),
 	); err != nil {

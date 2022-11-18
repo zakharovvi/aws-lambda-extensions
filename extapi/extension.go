@@ -7,7 +7,7 @@ import (
 )
 
 // Extension abstracts the extension logic from Lambda Extensions API.
-// For Logs API extension, use logsapi.LogProcessor and logsapi.Run.
+// For Telemetry API extension, use telemetryapi.Processor and telemetryapi.Run.
 type Extension interface {
 	// Init is called after extension Register and before invoking lambda function.
 	// It's the best place to make network connections, warmup caches, preallocate buffers, etc.

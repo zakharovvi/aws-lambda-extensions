@@ -38,7 +38,7 @@ var (
 	`)
 )
 
-type testLogProcessor struct {
+type testProcessor struct {
 	initCalled     bool
 	initErr        error
 	receivedLogs   []logsapi.Log
@@ -47,13 +47,13 @@ type testLogProcessor struct {
 	shutdownCalled bool
 }
 
-func (proc *testLogProcessor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *testProcessor) Init(ctx context.Context, client *extapi.Client) error {
 	proc.initCalled = true
 
 	return proc.initErr
 }
 
-func (proc *testLogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
+func (proc *testProcessor) Process(ctx context.Context, msg logsapi.Log) error {
 	proc.receivedLogs = append(proc.receivedLogs, msg)
 
 	res := proc.processErrors[0]
@@ -62,7 +62,7 @@ func (proc *testLogProcessor) Process(ctx context.Context, msg logsapi.Log) erro
 	return res
 }
 
-func (proc *testLogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+func (proc *testProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
 	proc.shutdownCalled = true
 
 	return proc.shutdownErr
@@ -147,7 +147,7 @@ func TestRun(t *testing.T) {
 	tests := []struct {
 		name                    string
 		apiMock                 *lambdaAPIMock
-		proc                    *testLogProcessor
+		proc                    *testProcessor
 		destinationAddr         string
 		wantReceivedLogs        []logsapi.Log
 		wantRunErr              error
@@ -158,7 +158,7 @@ func TestRun(t *testing.T) {
 		{
 			"no logs",
 			&lambdaAPIMock{},
-			&testLogProcessor{},
+			&testProcessor{},
 			"localhost:10000",
 			nil,
 			nil,
@@ -169,7 +169,7 @@ func TestRun(t *testing.T) {
 		{
 			"server start failed",
 			&lambdaAPIMock{},
-			&testLogProcessor{},
+			&testProcessor{},
 			"127.0.0.1:1",
 			nil,
 			errors.New("Extension.Init failed: could not start event receiving HTTP server: listen tcp 127.0.0.1:1: bind: permission denied"),
@@ -182,7 +182,7 @@ func TestRun(t *testing.T) {
 			&lambdaAPIMock{
 				logsSubscribeStatus: http.StatusInternalServerError,
 			},
-			&testLogProcessor{},
+			&testProcessor{},
 			"localhost:10000",
 			nil,
 			errors.New("Extension.Init failed: logs subscribe http call failed: http request failed with status 500 Internal Server Error and body: "),
@@ -199,7 +199,7 @@ func TestRun(t *testing.T) {
 				},
 				wantLogsResponses: []int{http.StatusOK, http.StatusOK},
 			},
-			&testLogProcessor{
+			&testProcessor{
 				processErrors: []error{nil, nil, nil, nil},
 			},
 			"localhost:10000",
@@ -242,7 +242,7 @@ func TestRun(t *testing.T) {
 				},
 				wantLogsResponses: []int{http.StatusInternalServerError},
 			},
-			&testLogProcessor{
+			&testProcessor{
 				processErrors: []error{nil},
 			},
 			"localhost:10000",
@@ -260,14 +260,14 @@ func TestRun(t *testing.T) {
 			true,
 		},
 		{
-			"LogProcessor.Process failed",
+			"Processor.Process failed",
 			&lambdaAPIMock{
 				logsRequests: [][]byte{
 					[]byte(`[{"type":"platform.end","time":"2022-01-01T00:00:00Z","record":{"requestId":"1.1"}},{"type":"platform.end","time":"2022-01-01T00:00:00Z","record":{"requestId":"1.2"}}]`),
 				},
 				wantLogsResponses: []int{http.StatusOK},
 			},
-			&testLogProcessor{
+			&testProcessor{
 				processErrors: []error{nil, errors.New("test_error")},
 			},
 			"localhost:10000",
@@ -291,14 +291,14 @@ func TestRun(t *testing.T) {
 			true,
 		},
 		{
-			"LogProcessor.Shutdown failed",
+			"Processor.Shutdown failed",
 			&lambdaAPIMock{
 				logsRequests: [][]byte{
 					[]byte(`[{"type":"platform.end","time":"2022-01-01T00:00:00Z","record":{"requestId":"1.1"}}]`),
 				},
 				wantLogsResponses: []int{http.StatusOK},
 			},
-			&testLogProcessor{
+			&testProcessor{
 				processErrors: []error{nil},
 				shutdownErr:   errors.New("shutdown_failed"),
 			},
@@ -317,9 +317,9 @@ func TestRun(t *testing.T) {
 			true,
 		},
 		{
-			"LogProcessor.Init failed",
+			"Processor.Init failed",
 			&lambdaAPIMock{},
-			&testLogProcessor{
+			&testProcessor{
 				initErr: errors.New("test error"),
 			},
 			"localhost:10000",

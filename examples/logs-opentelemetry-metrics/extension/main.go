@@ -21,7 +21,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 )
 
-type LogProcessor struct {
+type Processor struct {
 	sdk *metric.MeterProvider
 
 	duration           syncint64.Histogram
@@ -35,7 +35,7 @@ type LogProcessor struct {
 	logsDroppedRecords syncint64.Counter
 }
 
-func (proc *LogProcessor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *Processor) Init(ctx context.Context, client *extapi.Client) error {
 	exp, err := stdoutmetric.New(stdoutmetric.WithEncoder(json.NewEncoder(os.Stdout)))
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func (proc *LogProcessor) Init(ctx context.Context, client *extapi.Client) error
 	return nil
 }
 
-func (proc *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
+func (proc *Processor) Process(ctx context.Context, msg logsapi.Log) error {
 	var err error
 	switch record := msg.Record.(type) {
 	case logsapi.RecordPlatformReport:
@@ -158,7 +158,7 @@ func (proc *LogProcessor) Process(ctx context.Context, msg logsapi.Log) error {
 	return err
 }
 
-func (proc *LogProcessor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
+func (proc *Processor) Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error {
 	return proc.sdk.Shutdown(ctx)
 }
 
@@ -169,7 +169,7 @@ func main() {
 
 	if err := logsapi.Run(
 		context.Background(),
-		&LogProcessor{},
+		&Processor{},
 		logsapi.WithLogger(logger),
 		logsapi.WithBufferingCfg(&extapi.LogsBufferingCfg{TimeoutMS: 25, MaxBytes: 262144, MaxItems: 1000}),
 	); err != nil {

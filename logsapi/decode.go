@@ -132,7 +132,7 @@ type RecordFunction string
 type RecordExtension string
 
 // DecodeLogs consumes all logs from json array stream and send them to the provided channel.
-// DecodeLogs is low-level function. Consider using Run instead and implement LogProcessor.
+// DecodeLogs is low-level function. Consider using Run instead and implement Processor.
 // DecodeLogs drains and closes the input stream afterwards.
 func DecodeLogs(ctx context.Context, r io.ReadCloser, logs chan<- Log) error {
 	return internal.Decode(ctx, r, logs, decodeNext)

@@ -8,15 +8,15 @@ import (
 	"github.com/zakharovvi/aws-lambda-extensions/internal"
 )
 
-// TelemetryProcessor implements client logic to process and store events.
-type TelemetryProcessor interface {
+// Processor implements client logic to process and store events.
+type Processor interface {
 	// Init is called before starting receiving events and Process.
 	// It's the best place to make network connections, warmup caches, preallocate buffers, etc.
 	Init(ctx context.Context, client *extapi.Client) error
 	// Process stores events in persistent storage or accumulate in a buffer and flush periodically.
 	Process(ctx context.Context, event Event) error
 	// Shutdown is called before exiting the extension.
-	// TelemetryProcessor should flush all the buffered data to persistent storage if any and cleanup all used resources.
+	// Processor should flush all the buffered data to persistent storage if any and cleanup all used resources.
 	Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error
 }
 
@@ -90,9 +90,9 @@ func WithDestinationAddr(addr string) Option {
 	return destinationAddrOption(addr)
 }
 
-// Run runs the TelemetryProcessor.
+// Run runs the Processor.
 // Run blocks the current goroutine till extension lifecycle is finished or error occurs.
-func Run(ctx context.Context, proc TelemetryProcessor, opts ...Option) error {
+func Run(ctx context.Context, proc Processor, opts ...Option) error {
 	options := options{
 		destinationAddr: "sandbox.localdomain:0",
 		log:             logr.FromContextOrDiscard(ctx),
