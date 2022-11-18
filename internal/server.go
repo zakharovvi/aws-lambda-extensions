@@ -62,6 +62,7 @@ func NewExtension[T any](
 		subscriber,
 	}
 	ext.srv.Handler = ext
+
 	return ext
 }
 

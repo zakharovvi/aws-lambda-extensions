@@ -8,6 +8,8 @@ use (
 	./examples/logs-opentelemetry-metrics/function
 	./examples/logs-subscriber/extension
 	./examples/logs-subscriber/function
+	./examples/telemetry-subscriber/extension
+	./examples/telemetry-subscriber/function
 	./tests/rie
 	./tests/lambda
 )

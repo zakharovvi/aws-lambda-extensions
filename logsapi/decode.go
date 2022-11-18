@@ -55,7 +55,7 @@ type Log struct {
 	RawRecord json.RawMessage `json:"record"`
 	// Record property defines a struct that contains the telemetry data.
 	// The type of the struct depends on the Log.LogType
-	Record any `json:"decodedRecord,omitempty"` // tag for printing the field with json.Marshall
+	Record any `json:"decodedRecord,omitempty"` // tag for printing the field with json.Marshal
 }
 
 // RecordPlatformStart is the invocation start time.
@@ -191,5 +191,6 @@ func decodeNext(d *json.Decoder) (Log, error) {
 	if unmarshalErr != nil {
 		return msg, fmt.Errorf("could not decode log record %s for log type %s with error: %w", msg.RawRecord, msg.LogType, unmarshalErr)
 	}
+
 	return msg, nil
 }

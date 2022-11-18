@@ -1,9 +1,12 @@
-package lambdaext
+package lambdaext_test
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	lambdaext "github.com/zakharovvi/aws-lambda-extensions"
 )
 
 func TestDurationMs_UnmarshalJSON(t *testing.T) {
@@ -11,25 +14,25 @@ func TestDurationMs_UnmarshalJSON(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		want    DurationMs
+		want    lambdaext.DurationMs
 		json    []byte
 		wantErr bool
 	}{
 		{
 			"float",
-			DurationMs(90100 * time.Microsecond),
+			lambdaext.DurationMs(90100 * time.Microsecond),
 			[]byte("90.1"),
 			false,
 		},
 		{
 			"int",
-			DurationMs(694 * time.Millisecond),
+			lambdaext.DurationMs(694 * time.Millisecond),
 			[]byte("694"),
 			false,
 		},
 		{
 			"unsupported",
-			DurationMs(0),
+			lambdaext.DurationMs(0),
 			[]byte(`"10s"`),
 			true,
 		},
@@ -37,13 +40,18 @@ func TestDurationMs_UnmarshalJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := DurationMs(0)
+			got := lambdaext.DurationMs(0)
 			if err := json.Unmarshal(tt.json, &got); (err != nil) != tt.wantErr {
 				t.Errorf("json.Unmarshal() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if got != tt.want {
-				t.Errorf("json.Unmarshal() got = %#v, want = %#v", got, tt.want)
-			}
+			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestDurationMs_MarshalJSON(t *testing.T) {
+	d := lambdaext.DurationMs(1*time.Hour + 2*time.Minute + 23*time.Second + 387*time.Millisecond)
+	got, err := json.Marshal(d)
+	require.NoError(t, err)
+	require.Equal(t, `"1h2m23.387s"`, string(got))
 }

@@ -33,7 +33,7 @@ func Decode[T any](
 			return fmt.Errorf("decoding was interrupted with context error: %w", ctx.Err())
 		default:
 		}
-		logs <- T(msg)
+		logs <- msg
 	}
 	if err := readBracket(d, "]"); err != nil {
 		return err

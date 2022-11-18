@@ -10,8 +10,10 @@ This repository contains framework and helper functions to build your own AWS la
 ## Overview
 
 Repository contains two main packages:
-* [extapi](https://pkg.go.dev/github.com/zakharovvi/aws-lambda-extensions/extapi) for [Extensions API](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-extensions-api.html)
-* [logsapi](https://pkg.go.dev/github.com/zakharovvi/aws-lambda-extensions/logsapi) for [Logs API](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-logs-api.html)
+* [extapi](https://pkg.go.dev/github.com/zakharovvi/aws-lambda-extensions/extapi)
+  for [Extensions API](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-extensions-api.html)
+* [telemetryapi](https://pkg.go.dev/github.com/zakharovvi/aws-lambda-extensions/telemetryapi)
+  for [Telemetry API](https://docs.aws.amazon.com/lambda/latest/dg/telemetry-api.html)
 
 You can find more information on how to build your lambda extensions in [AWS documentation](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html).
 

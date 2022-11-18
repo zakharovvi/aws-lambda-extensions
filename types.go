@@ -35,7 +35,7 @@ const TracingTypeAWSXRay TracingType = "X-Amzn-Trace-Id"
 
 type TracingValue string
 
-// DurationMs is a time.Duration, parsed from numeric milliseconds value
+// DurationMs is a time.Duration, parsed from numeric milliseconds value.
 type DurationMs time.Duration
 
 func (d *DurationMs) UnmarshalJSON(b []byte) error {
@@ -53,4 +53,12 @@ func (d *DurationMs) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
+}
+
+func (d DurationMs) String() string {
+	return time.Duration(d).String()
+}
+
+func (d DurationMs) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%s"`, d)), nil
 }
