@@ -17,10 +17,15 @@ Resources:
       CodeUri: function
       Handler: main
       Runtime: go1.x
+      Tracing: Active
       Architectures:
         - x86_64
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
       Layers:
         - !Ref ExtensionLayer
+        # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-Getting-Started-SAM-CLI.html
+        - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:14"
       Tags:
         project: zakharovvi/aws-lambda-extensions
   ExtensionLayer:
