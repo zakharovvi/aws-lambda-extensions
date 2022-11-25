@@ -77,6 +77,8 @@ type LogsSubscribeRequest struct {
 }
 
 // NewLogsSubscribeRequest creates LogsSubscribeRequest with sensible defaults.
+//
+// Deprecated: The Lambda Telemetry API supersedes the Lambda Logs API. Use NewTelemetrySubscribeRequest instead.
 func NewLogsSubscribeRequest(url string, logTypes []LogSubscriptionType, bufferingCfg *LogsBufferingCfg) *LogsSubscribeRequest {
 	if len(logTypes) == 0 {
 		// do not subscribe to LogSubscriptionTypeExtension by default to avoid recursion
@@ -97,6 +99,9 @@ func NewLogsSubscribeRequest(url string, logTypes []LogSubscriptionType, bufferi
 // LogsSubscribe subscribes to a log stream.
 // Lambda streams the logs to the extension, and the extension can then process, filter, and send the logs to any preferred destination.
 // Subscription should occur during the extension initialization phase.
+//
+// Deprecated: The Lambda Telemetry API supersedes the Lambda Logs API. Use TelemetrySubscribe instead.
+//
 // https://docs.aws.amazon.com/lambda/latest/dg/telemetry-api-reference.html
 func (c *Client) LogsSubscribe(ctx context.Context, subscribeReq *LogsSubscribeRequest) error {
 	body, err := json.Marshal(subscribeReq)
