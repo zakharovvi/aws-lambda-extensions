@@ -1,3 +1,4 @@
+// AWS CDK Stack for Project Integration Testing
 package main
 
 import (
