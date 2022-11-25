@@ -172,14 +172,7 @@ func TestDecode_EventTypes(t *testing.T) {
 					"record": {
 						"initializationType": "on-demand",
 						"phase": "init",
-						"status": "success",
-						"spans": [
-							{
-								"name": "someTimeSpan",
-								"start": "2020-08-20T12:31:32.0Z",
-								"durationMs": 70.5
-							}
-						]
+						"status": "success"
 					}
 				}
 			]`,
@@ -189,26 +182,12 @@ func TestDecode_EventTypes(t *testing.T) {
 				RawRecord: json.RawMessage(`{
 						"initializationType": "on-demand",
 						"phase": "init",
-						"status": "success",
-						"spans": [
-							{
-								"name": "someTimeSpan",
-								"start": "2020-08-20T12:31:32.0Z",
-								"durationMs": 70.5
-							}
-						]
+						"status": "success"
 				}`),
 				Record: telemetryapi.RecordPlatformInitRuntimeDone{
 					InitType: lambdaext.InitTypeOnDemand,
 					Phase:    telemetryapi.PhaseInit,
 					Status:   telemetryapi.StatusSuccess,
-					Spans: []telemetryapi.Span{
-						{
-							Name:     "someTimeSpan",
-							Start:    time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
-							Duration: lambdaext.DurationMs(70500 * time.Microsecond),
-						},
-					},
 				},
 			},
 		},
@@ -223,14 +202,7 @@ func TestDecode_EventTypes(t *testing.T) {
 						"phase": "init",
 						"metrics": {
 							"durationMs": 125.33
-						},
-						"spans": [
-							{
-								"name": "someTimeSpan",
-								"start": "2020-08-20T12:31:32.0Z",
-								"durationMs": 70.5
-							}
-						]
+						}
 					}
 				}
 			]`,
@@ -242,27 +214,13 @@ func TestDecode_EventTypes(t *testing.T) {
 						"phase": "init",
 						"metrics": {
 							"durationMs": 125.33
-						},
-						"spans": [
-							{
-								"name": "someTimeSpan",
-								"start": "2020-08-20T12:31:32.0Z",
-								"durationMs": 70.5
-							}
-						]
+						}
 				}`),
 				Record: telemetryapi.RecordPlatformInitReport{
 					InitType: lambdaext.InitTypeOnDemand,
 					Phase:    telemetryapi.PhaseInit,
 					Metrics: telemetryapi.InitReportMetrics{
 						Duration: lambdaext.DurationMs(125330 * time.Microsecond),
-					},
-					Spans: []telemetryapi.Span{
-						{
-							Name:     "someTimeSpan",
-							Start:    time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
-							Duration: lambdaext.DurationMs(70500 * time.Microsecond),
-						},
 					},
 				},
 			},
@@ -401,14 +359,7 @@ func TestDecode_EventTypes(t *testing.T) {
 							"spanId": "54565fb41ac79632",
 							"type": "X-Amzn-Trace-Id",
 							"value": "Root=1-62e900b2-710d76f009d6e7785905449a;Parent=0efbd19962d95b05;Sampled=1"
-						},
-						"spans": [
-							{
-								"name": "someTimeSpan",
-								"start": "2020-08-20T12:31:32.0Z",
-								"durationMs": 70.5
-							}
-						]
+						}
 					}
 				}
 			]`,
@@ -430,14 +381,7 @@ func TestDecode_EventTypes(t *testing.T) {
 							"spanId": "54565fb41ac79632",
 							"type": "X-Amzn-Trace-Id",
 							"value": "Root=1-62e900b2-710d76f009d6e7785905449a;Parent=0efbd19962d95b05;Sampled=1"
-						},
-						"spans": [
-							{
-								"name": "someTimeSpan",
-								"start": "2020-08-20T12:31:32.0Z",
-								"durationMs": 70.5
-							}
-						]
+						}
 				}`),
 				Record: telemetryapi.RecordPlatformReport{
 					RequestID: "6d68ca91-49c9-448d-89b8-7ca3e6dc66aa",
@@ -454,13 +398,6 @@ func TestDecode_EventTypes(t *testing.T) {
 						SpanID: "54565fb41ac79632",
 						Type:   lambdaext.TracingTypeAWSXRay,
 						Value:  lambdaext.TracingValue("Root=1-62e900b2-710d76f009d6e7785905449a;Parent=0efbd19962d95b05;Sampled=1"),
-					},
-					Spans: []telemetryapi.Span{
-						{
-							Name:     "someTimeSpan",
-							Start:    time.Date(2020, 8, 20, 12, 31, 32, 0, time.UTC),
-							Duration: lambdaext.DurationMs(70500 * time.Microsecond),
-						},
 					},
 				},
 			},

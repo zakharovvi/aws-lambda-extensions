@@ -74,7 +74,8 @@ type RecordPlatformInitRuntimeDone struct {
 	InitType lambdaext.InitType `json:"initializationType"`
 	Phase    Phase              `json:"phase"`
 	Status   Status             `json:"status"`
-	Spans    []Span             `json:"spans,omitempty"`
+	// If the status is either failure or error, then the Status object also contains an errorType field describing the error.
+	ErrorType string `json:"errorType"`
 }
 
 // RecordPlatformInitReport event contains an overall report of the function initialization phase.
@@ -83,7 +84,6 @@ type RecordPlatformInitReport struct {
 	InitType lambdaext.InitType `json:"initializationType"`
 	Phase    Phase              `json:"phase"`
 	Metrics  InitReportMetrics  `json:"metrics"`
-	Spans    []Span             `json:"spans,omitempty"`
 }
 
 // RecordPlatformStart event indicates that the function invocation phase has started.
@@ -99,9 +99,11 @@ type RecordPlatformStart struct {
 type RecordPlatformRuntimeDone struct {
 	RequestID lambdaext.RequestID `json:"requestId"`
 	Status    Status              `json:"status"`
-	Metrics   RuntimeDoneMetrics  `json:"metrics,omitempty"`
-	Tracing   TraceContext        `json:"tracing,omitempty"`
-	Spans     []Span              `json:"spans,omitempty"`
+	// If the status is either failure or error, then the Status object also contains an errorType field describing the error.
+	ErrorType string             `json:"errorType"`
+	Metrics   RuntimeDoneMetrics `json:"metrics,omitempty"`
+	Tracing   TraceContext       `json:"tracing,omitempty"`
+	Spans     []Span             `json:"spans,omitempty"`
 }
 
 // RecordPlatformReport event contains an overall report of the function completed phase.
@@ -111,7 +113,6 @@ type RecordPlatformReport struct {
 	Status    Status              `json:"status"`
 	Metrics   ReportMetrics       `json:"metrics"`
 	Tracing   TraceContext        `json:"tracing,omitempty"`
-	Spans     []Span              `json:"spans,omitempty"`
 }
 
 // RecordPlatformExtension is generated when an extension registers with the extensions API.
