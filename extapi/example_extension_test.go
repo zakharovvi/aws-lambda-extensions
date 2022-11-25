@@ -11,12 +11,13 @@ import (
 type Extension struct{}
 
 func (ext *Extension) Init(ctx context.Context, client *extapi.Client) error {
+	registerResp := client.GetRegisterResponse()
 	log.Printf(
 		"initializing extension for function %s(%s), handler %s, and accountID %s\n",
-		client.FunctionName(),
-		client.FunctionVersion(),
-		client.Handler(),
-		client.AccountID(),
+		registerResp.FunctionName,
+		registerResp.FunctionVersion,
+		registerResp.Handler,
+		registerResp.AccountID,
 	)
 
 	return nil

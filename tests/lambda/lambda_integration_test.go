@@ -1,3 +1,4 @@
+// Integration test to deploy all examples and invoke lambda functions
 package main_test
 
 import (

@@ -47,7 +47,7 @@ type testProcessor struct {
 	shutdownCalled bool
 }
 
-func (proc *testProcessor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *testProcessor) Init(ctx context.Context, registerResp *extapi.RegisterResponse) error {
 	proc.initCalled = true
 
 	return proc.initErr

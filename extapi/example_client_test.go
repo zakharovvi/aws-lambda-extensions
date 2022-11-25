@@ -20,10 +20,11 @@ func ExampleClient() {
 	if err != nil {
 		log.Panic(err)
 	}
-	log.Println(client.FunctionName())
-	log.Println(client.FunctionVersion())
-	log.Println(client.Handler())
-	log.Println(client.AccountID())
+	registerResp := client.GetRegisterResponse()
+	log.Println(registerResp.FunctionName)
+	log.Println(registerResp.FunctionVersion)
+	log.Println(registerResp.Handler)
+	log.Println(registerResp.AccountID)
 
 	// 2. initialize the extension
 	initFunc := func() error { return nil }

@@ -10,13 +10,13 @@ import (
 
 type Processor struct{}
 
-func (proc *Processor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *Processor) Init(ctx context.Context, registerResp *extapi.RegisterResponse) error {
 	log.Printf(
 		"initializing Processor for function %s(%s), handler %s and accountID %s\n",
-		client.FunctionName(),
-		client.FunctionVersion(),
-		client.Handler(),
-		client.AccountID(),
+		registerResp.FunctionName,
+		registerResp.FunctionVersion,
+		registerResp.Handler,
+		registerResp.AccountID,
 	)
 
 	return nil

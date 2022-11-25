@@ -49,7 +49,8 @@ type RegisterResponse struct {
 	FunctionName    string                    `json:"functionName"`
 	FunctionVersion lambdaext.FunctionVersion `json:"functionVersion"`
 	Handler         string                    `json:"handler"`
-	AccountID       string                    `json:"accountId"`
+	// AccountID returns the account ID associated with the Lambda function that you're registering the extension for.
+	AccountID string `json:"accountId"`
 }
 
 // NextEventResponse is the response for /event/next.
@@ -175,21 +176,8 @@ type Client struct {
 	log          logr.Logger
 }
 
-func (c *Client) FunctionName() string {
-	return c.registerResp.FunctionName
-}
-
-func (c *Client) FunctionVersion() lambdaext.FunctionVersion {
-	return c.registerResp.FunctionVersion
-}
-
-func (c *Client) Handler() string {
-	return c.registerResp.Handler
-}
-
-// AccountID returns the account ID associated with the Lambda function that you're registering the extension for.
-func (c *Client) AccountID() string {
-	return c.registerResp.AccountID
+func (c *Client) GetRegisterResponse() *RegisterResponse {
+	return c.registerResp
 }
 
 // Register registers the extension with the Lambda Extensions API. This happens

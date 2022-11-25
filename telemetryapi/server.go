@@ -12,7 +12,7 @@ import (
 type Processor interface {
 	// Init is called before starting receiving events and Process.
 	// It's the best place to make network connections, warmup caches, preallocate buffers, etc.
-	Init(ctx context.Context, client *extapi.Client) error
+	Init(ctx context.Context, registerResp *extapi.RegisterResponse) error
 	// Process stores events in persistent storage or accumulate in a buffer and flush periodically.
 	Process(ctx context.Context, event Event) error
 	// Shutdown is called before exiting the extension.

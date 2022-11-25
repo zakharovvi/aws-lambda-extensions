@@ -16,13 +16,13 @@ type Processor struct {
 	logger logr.Logger
 }
 
-func (proc *Processor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *Processor) Init(ctx context.Context, registerResp *extapi.RegisterResponse) error {
 	proc.logger.Info(
 		"initializing event processor...",
-		"FunctionName", client.FunctionName(),
-		"FunctionVersion", client.FunctionVersion(),
-		"handler", client.Handler(),
-		"accountID", client.AccountID(),
+		"FunctionName", registerResp.FunctionName,
+		"FunctionVersion", registerResp.FunctionVersion,
+		"handler", registerResp.Handler,
+		"accountID", registerResp.AccountID,
 	)
 
 	return nil

@@ -35,7 +35,7 @@ type Processor struct {
 	logsDroppedRecords syncint64.Counter
 }
 
-func (proc *Processor) Init(ctx context.Context, client *extapi.Client) error {
+func (proc *Processor) Init(ctx context.Context, registerResp *extapi.RegisterResponse) error {
 	exp, err := stdoutmetric.New(stdoutmetric.WithEncoder(json.NewEncoder(os.Stdout)))
 	if err != nil {
 		return err
@@ -45,10 +45,10 @@ func (proc *Processor) Init(ctx context.Context, client *extapi.Client) error {
 		metric.WithResource(resource.NewSchemaless(
 			semconv.CloudProviderAWS,
 			semconv.CloudPlatformAWSLambda,
-			semconv.CloudAccountIDKey.String(client.AccountID()),
+			semconv.CloudAccountIDKey.String(registerResp.AccountID),
 			semconv.CloudRegionKey.String(extapi.EnvAWSRegion()),
-			semconv.FaaSNameKey.String(client.FunctionName()),
-			semconv.FaaSVersionKey.String(string(client.FunctionVersion())),
+			semconv.FaaSNameKey.String(registerResp.FunctionName),
+			semconv.FaaSVersionKey.String(string(registerResp.FunctionVersion)),
 			semconv.FaaSMaxMemoryKey.Int(extapi.EnvAWSLambdaFunctionMemorySizeMB()),
 		)),
 		metric.WithReader(metric.NewPeriodicReader(exp)),

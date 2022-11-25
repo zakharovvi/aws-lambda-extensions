@@ -26,10 +26,7 @@ type Extension struct {
 func (ext *Extension) Init(ctx context.Context, client *extapi.Client) error {
 	ext.logger.Info(
 		"initializing extension...",
-		"FunctionName", client.FunctionName(),
-		"FunctionVersion", client.FunctionVersion(),
-		"handler", client.Handler(),
-		"accountID", client.AccountID(),
+		"registerResponse", client.GetRegisterResponse(),
 	)
 	ext.wg.Done()
 

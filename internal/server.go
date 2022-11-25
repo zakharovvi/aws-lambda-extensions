@@ -14,7 +14,7 @@ import (
 )
 
 type eventProcessor[T any] interface {
-	Init(ctx context.Context, client *extapi.Client) error
+	Init(ctx context.Context, registerResp *extapi.RegisterResponse) error
 	Process(ctx context.Context, event T) error
 	Shutdown(ctx context.Context, reason extapi.ShutdownReason, err error) error
 }
@@ -71,7 +71,7 @@ func (ext *Extension[T]) Init(ctx context.Context, client *extapi.Client) error 
 	// in case of Init error ext.Shutdown is called and waits for ext.processingDoneCh to be closed in ext.startEventProcessing
 	go ext.startEventProcessing(ctx)
 
-	if err := ext.proc.Init(ctx, client); err != nil {
+	if err := ext.proc.Init(ctx, client.GetRegisterResponse()); err != nil {
 		return fmt.Errorf("EventProcessor.Init failed: %w", err)
 	}
 
