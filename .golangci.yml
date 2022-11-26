@@ -30,6 +30,8 @@ linters:
     - wrapcheck
     - testableexamples
     - gocognit
+    - contextcheck
+    - staticcheck
 issues:
   exclude-rules:
     - path: _test\.go
@@ -39,3 +41,5 @@ issues:
         - wrapcheck
         - staticcheck
         - maintidx
+        - forcetypeassert
+        - govet

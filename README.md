@@ -9,11 +9,14 @@ This repository contains framework and helper functions to build your own AWS la
 
 ## Overview
 
-Repository contains two main packages:
+Repository packages:
+
 * [extapi](https://pkg.go.dev/github.com/zakharovvi/aws-lambda-extensions/extapi)
   for [Extensions API](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-extensions-api.html)
 * [telemetryapi](https://pkg.go.dev/github.com/zakharovvi/aws-lambda-extensions/telemetryapi)
   for [Telemetry API](https://docs.aws.amazon.com/lambda/latest/dg/telemetry-api.html)
+  * [otel](https://pkg.go.dev/github.com/zakharovvi/aws-lambda-extensions/telemetryapi/otel)
+    for [Converting Lambda Telemetry API Event objects to OpenTelemetry Spans](https://docs.aws.amazon.com/lambda/latest/dg/telemetry-otel-spans.html)
 
 You can find more information on how to build your lambda extensions in [AWS documentation](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html).
 

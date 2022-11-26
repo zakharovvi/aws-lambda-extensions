@@ -20,8 +20,10 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-var cloudformationClient *cloudformation.Client
-var lambdaClient *lambda.Client
+var (
+	cloudformationClient *cloudformation.Client
+	lambdaClient         *lambda.Client
+)
 
 func init() {
 	cfg, err := config.LoadDefaultConfig(context.Background())

@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  This example demonstrates how to convert Telemetry API events into OpenTelemetry tracing spans.
+
+Globals:
+  Function:
+    Tags:
+      project: "zakharovvi/aws-lambda-extensions"
+
+Resources:
+  ExampleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: example-telemetry-otel-trace-exporter
+      Description: This example demonstrates how to convert Telemetry API events into OpenTelemetry tracing spans.
+      CodeUri: function
+      Handler: main
+      Runtime: go1.x
+      Tracing: Active
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+      Architectures:
+        - x86_64
+      Layers:
+        - !Ref ExtensionLayer
+        # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-Getting-Started-SAM-CLI.html
+        - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:14"
+      Tags:
+        project: zakharovvi/aws-lambda-extensions
+  ExtensionLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: example-telemetry-otel-trace-exporter
+      Description: This example demonstrates how to convert Telemetry API events into OpenTelemetry tracing spans.
+      CompatibleArchitectures:
+        - x86_64
+      ContentUri: extension
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: makefile
+
+Outputs:
+  ExampleFunction:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt ExampleFunction.Arn
